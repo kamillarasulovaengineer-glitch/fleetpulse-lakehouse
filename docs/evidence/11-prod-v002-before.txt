@@ -20,7 +20,7 @@
   updated_at   | TIMESTAMP
   (11 rows)
 
->>> SELECT (SELECT count(*) FROM telematics.prod.bronze_pings) bronze, (SELECT count(*) FROM telematics.prod.silver_pings) silver, (SELECT count(*) FROM telematics.prod.silver_pings_quarantine) quarantine
+>>> SELECT (SELECT count(*) FROM telematics.prod.bronze_pings) bronze, (SELECT count(*) FROM telematics.prod.silver_pings) silver, (SELECT count(*) FROM telematics.prod.silver_pings_quarantine) quarantine …
   bronze | silver | quarantine | gold
   260    | 220    | 20         | 20  
   (1 rows)

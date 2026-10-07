@@ -23,8 +23,8 @@ migrate task output: telematics.prod at V2; applied this run: V2__gold_truck_pos
   in_geofence  | BOOLEAN  
   (12 rows)
 
->>> SELECT version, timestamp, userName, operation, job.jobId AS job_id, job.runId AS job_run_id FROM (DESCRIBE HISTORY telematics.prod.gold_truck_position) ORDER BY version
-  version | timestamp                | userName                            | operation    | job_id          | job_run_id      
+>>> SELECT version, timestamp, userName, operation, job.jobId AS job_id, job.runId AS task_run_id FROM (DESCRIBE HISTORY telematics.prod.gold_truck_position) ORDER BY version
+  version | timestamp                | userName                            | operation    | job_id          | task_run_id      
   0       | 2026-10-07 13:53:09 EDT | <user> | CREATE TABLE | 755004309447683 | 610253851283582 
   1       | 2026-10-07 13:54:54 EDT | <user> | MERGE        | 755004309447683 | 1093238211297538
   2       | 2026-10-07 14:23:20 EDT | <user> | ADD COLUMNS  | 755004309447683 | 193751013370953 

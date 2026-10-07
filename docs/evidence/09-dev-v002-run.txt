@@ -2,18 +2,18 @@
 $ databricks bundle run fleetpulse_simulator -t dev
 Run URL: https://<workspace>/jobs/1104756763977643/runs/551361121452842
 
-2026-10-07 13:41:40 EDT "[dev kamilla_rasulova_engineer] fleetpulse-simulator-dev" RUNNING
-2026-10-07 13:47:08 EDT "[dev kamilla_rasulova_engineer] fleetpulse-simulator-dev" TERMINATED SUCCESS
+2026-10-07 13:41:40 EDT "[dev <user>] fleetpulse-simulator-dev" RUNNING
+2026-10-07 13:47:08 EDT "[dev <user>] fleetpulse-simulator-dev" TERMINATED SUCCESS
 
 $ databricks bundle run fleetpulse_pipeline -t dev
 Run URL: https://<workspace>/jobs/197224751308888/runs/586566645681892
 
-2026-10-07 13:47:11 EDT "[dev kamilla_rasulova_engineer] fleetpulse-pipeline-dev" RUNNING
-2026-10-07 13:55:08 EDT "[dev kamilla_rasulova_engineer] fleetpulse-pipeline-dev" TERMINATED SUCCESS
+2026-10-07 13:47:11 EDT "[dev <user>] fleetpulse-pipeline-dev" RUNNING
+2026-10-07 13:55:08 EDT "[dev <user>] fleetpulse-pipeline-dev" TERMINATED SUCCESS
 Output:
 =======
 Task migrate:
-telematics.dev_kamilla_rasulova_engineer_dev at V2; applied this run: V2__gold_truck_position_add_in_geofence
+telematics.dev_<user>_dev at V2; applied this run: V2__gold_truck_position_add_in_geofence
 =======
 Task seed_truck_details:
 

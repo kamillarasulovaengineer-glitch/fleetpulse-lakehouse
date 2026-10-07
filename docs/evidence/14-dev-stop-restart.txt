@@ -1,0 +1,277 @@
+# 2026-10-07 14:24:17 EDT  stop/restart check in dev
+## before
+
+>>> SELECT (SELECT count(*) FROM telematics.dev_<user>_dev.bronze_pings) bronze, (SELECT count(DISTINCT _source_file) FROM telematics.dev_<user>_dev.bronze_pings) fil
+  bronze | files | silver | silver_keys | quarantine | gold
+  485    | 40    | 405    | 405         | 40         | 20  
+  (1 rows)
+
+$ databricks bundle run fleetpulse_simulator -t dev --params batches=10
+
+2026-10-07 14:24:44 EDT "[dev <user>] fleetpulse-simulator-dev" RUNNING
+2026-10-07 14:25:17 EDT "[dev <user>] fleetpulse-simulator-dev" TERMINATED SUCCESS
+
+$ databricks bundle run fleetpulse_pipeline -t dev --no-wait
+
+run 768509570938591 started
+14:36:01 EDT RUNNING gold=BLOCKED migrate=TERMINATED silver=RUNNING bronze=TERMINATED seed_truck_details=TERMINATED -> cancelling
+{
+  "cleanup_duration": 0,
+  "creator_user_name": "<user>",
+  "effective_performance_target": "PERFORMANCE_OPTIMIZED",
+  "end_time": 1791398170555,
+  "execution_duration": 0,
+  "job_id": 197224751308888,
+  "job_parameters": [
+    {
+      "default": "telematics",
+      "name": "catalog"
+    },
+    {
+      "default": "dev_<user>_dev",
+      "name": "schema"
+    },
+    {
+      "default": "landing",
+      "name": "landing_volume"
+    },
+    {
+      "default": "checkpoints",
+      "name": "checkpoint_volume"
+    }
+  ],
+  "task_run_id": 768509570938591,
+  "number_in_job": 768509570938591,
+  "original_attempt_run_id": 768509570938591,
+  "run_duration": 649746,
+  "run_id": 768509570938591,
+  "run_name": "[dev <user>] fleetpulse-pipeline-dev",
+  "run_page_url": "https://<workspace>/#job/197224751308888/run/768509570938591",
+  "run_type": "JOB_RUN",
+  "setup_duration": 0,
+  "start_time": 1791397520809,
+  "state": {
+    "life_cycle_state": "TERMINATED",
+    "result_state": "CANCELED",
+    "state_message": "Run cancelled by user",
+    "user_cancelled_or_timedout": true
+  },
+  "status": {
+    "state": "TERMINATED",
+    "termination_details": {
+      "code": "USER_CANCELED",
+      "message": "Run cancelled by user",
+      "type": "SUCCESS"
+    }
+  },
+  "tasks": [
+    {
+      "attempt_number": 0,
+      "cleanup_duration": 0,
+      "depends_on": [
+        {
+          "task_key": "silver"
+        },
+        {
+          "task_key": "seed_truck_details"
+        }
+      ],
+      "effective_performance_target": "PERFORMANCE_OPTIMIZED",
+      "end_time": 1791398162639,
+      "execution_duration": 0,
+      "notebook_task": {
+        "notebook_path": "/Workspace/Users/<user>/.bundle/fleetpulse/dev/files/src/gold",
+        "source": "WORKSPACE"
+      },
+      "run_id": 389806736659633,
+      "run_if": "ALL_SUCCESS",
+      "run_page_url": "https://<workspace>/#job/197224751308888/run/389806736659633",
+      "setup_duration": 0,
+      "start_time": 0,
+      "state": {
+        "life_cycle_state": "SKIPPED",
+        "result_state": "UPSTREAM_CANCELED",
+        "state_message": "Skipped because upstream task was cancelled or timed out",
+        "user_cancelled_or_timedout": true
+      },
+      "status": {
+        "state": "TERMINATED",
+        "termination_details": {
+          "code": "SKIPPED",
+          "message": "Skipped because upstream task was cancelled or timed out",
+          "type": "SUCCESS"
+        }
+      },
+      "task_key": "gold"
+    },
+    {
+      "attempt_number": 0,
+      "cleanup_duration": 0,
+      "effective_performance_target": "PERFORMANCE_OPTIMIZED",
+      "end_time": 1791398136741,
+      "execution_duration": 612000,
+      "notebook_task": {
+        "base_parameters": {
+          "migrations_dir": "/Workspace/Users/<user>/.bundle/fleetpulse/dev/files/src/migrations"
+        },
+        "notebook_path": "/Workspace/Users/<user>/.bundle/fleetpulse/dev/files/src/migrate",
+        "source": "WORKSPACE"
+      },
+      "run_id": 1022967023367036,
+      "run_if": "ALL_SUCCESS",
+      "run_page_url": "https://<workspace>/#job/197224751308888/run/1022967023367036",
+      "setup_duration": 3000,
+      "start_time": 1791397520848,
+      "state": {
+        "life_cycle_state": "TERMINATED",
+        "result_state": "SUCCESS",
+        "state_message": "",
+        "user_cancelled_or_timedout": false
+      },
+      "status": {
+        "state": "TERMINATED",
+        "termination_details": {
+          "code": "SUCCESS",
+          "message": "",
+          "type": "SUCCESS"
+        }
+      },
+      "task_key": "migrate"
+    },
+    {
+      "attempt_number": 0,
+      "cleanup_duration": 0,
+      "depends_on": [
+        {
+          "task_key": "bronze"
+        }
+      ],
+      "effective_performance_target": "PERFORMANCE_OPTIMIZED",
+      "end_time": 1791398170131,
+      "execution_duration": 11000,
+      "notebook_task": {
+        "notebook_path": "/Workspace/Users/<user>/.bundle/fleetpulse/dev/files/src/silver",
+        "source": "WORKSPACE"
+      },
+      "run_id": 684749405629764,
+      "run_if": "ALL_SUCCESS",
+      "run_page_url": "https://<workspace>/#job/197224751308888/run/684749405629764",
+      "setup_duration": 2000,
+      "start_time": 1791398156717,
+      "state": {
+        "life_cycle_state": "TERMINATED",
+        "result_state": "CANCELED",
+        "state_message": "Run cancelled by user",
+        "user_cancelled_or_timedout": true
+      },
+      "status": {
+        "state": "TERMINATED",
+        "termination_details": {
+          "code": "USER_CANCELED",
+          "message": "Run cancelled by user",
+          "type": "SUCCESS"
+        }
+      },
+      "task_key": "silver"
+    },
+    {
+      "attempt_number": 0,
+      "cleanup_duration": 0,
+      "depends_on": [
+        {
+          "task_key": "migrate"
+        }
+      ],
+      "effective_performance_target": "PERFORMANCE_OPTIMIZED",
+      "end_time": 1791398156352,
+      "execution_duration": 17000,
+      "notebook_task": {
+        "notebook_path": "/Workspace/Users/<user>/.bundle/fleetpulse/dev/files/src/bronze",
+        "source": "WORKSPACE"
+      },
+      "run_id": 876220293397238,
+      "run_if": "ALL_SUCCESS",
+      "run_page_url": "https://<workspace>/#job/197224751308888/run/876220293397238",
+      "setup_duration": 2000,
+      "start_time": 1791398137159,
+      "state": {
+        "life_cycle_state": "TERMINATED",
+        "result_state": "SUCCESS",
+        "state_message": "",
+        "user_cancelled_or_timedout": false
+      },
+      "status": {
+        "state": "TERMINATED",
+        "termination_details": {
+          "code": "SUCCESS",
+          "message": "",
+          "type": "SUCCESS"
+        }
+      },
+      "task_key": "bronze"
+    },
+    {
+      "attempt_number": 0,
+      "cleanup_duration": 0,
+      "depends_on": [
+        {
+          "task_key": "migrate"
+        }
+      ],
+      "effective_performance_target": "PERFORMANCE_OPTIMIZED",
+      "end_time": 1791398150056,
+      "execution_duration": 10000,
+      "notebook_task": {
+        "notebook_path": "/Workspace/Users/<user>/.bundle/fleetpulse/dev/files/src/seed_truck_details",
+        "source": "WORKSPACE"
+      },
+      "run_id": 688532928519916,
+      "run_if": "ALL_SUCCESS",
+      "run_page_url": "https://<workspace>/#job/197224751308888/run/688532928519916",
+      "setup_duration": 2000,
+      "start_time": 1791398137240,
+      "state": {
+        "life_cycle_state": "TERMINATED",
+        "result_state": "SUCCESS",
+        "state_message": "",
+        "user_cancelled_or_timedout": false
+      },
+      "status": {
+        "state": "TERMINATED",
+        "termination_details": {
+          "code": "SUCCESS",
+          "message": "",
+          "type": "SUCCESS"
+        }
+      },
+      "task_key": "seed_truck_details"
+    }
+  ],
+  "trigger": "ONE_TIME"
+}
+14:36:11 EDT after cancel: TERMINATED gold=SKIPPED migrate=TERMINATED silver=TERMINATED bronze=TERMINATED seed_truck_details=TERMINATED
+## after the cancelled run
+
+>>> SELECT (SELECT count(*) FROM telematics.dev_<user>_dev.bronze_pings) bronze, (SELECT count(DISTINCT _source_file) FROM telematics.dev_<user>_dev.bronze_pings) fil
+  bronze | files | silver | silver_keys | quarantine | gold
+  594    | 50    | 405    | 405         | 40         | 20  
+  (1 rows)
+
+$ databricks bundle run fleetpulse_pipeline -t dev   # restart
+2026-10-07 14:36:19 EDT "[dev <user>] fleetpulse-pipeline-dev" RUNNING
+2026-10-07 14:37:42 EDT "[dev <user>] fleetpulse-pipeline-dev" TERMINATED SUCCESS
+telematics.dev_<user>_dev at V2; applied this run: nothing
+## after restart
+
+>>> SELECT (SELECT count(*) FROM telematics.dev_<user>_dev.bronze_pings) bronze, (SELECT count(DISTINCT _source_file) FROM telematics.dev_<user>_dev.bronze_pings) fil
+  bronze | files | silver | silver_keys | quarantine | gold
+  594    | 50    | 494    | 494         | 50         | 20  
+  (1 rows)
+
+>>> SELECT version, operation, operationMetrics.numTargetRowsInserted AS inserted FROM (DESCRIBE HISTORY telematics.dev_<user>_dev.silver_pings) ORDER BY version
+  version | operation    | inserted
+  0       | CREATE TABLE | None    
+  1       | MERGE        | 210     
+  2       | MERGE        | 195     
+  3       | MERGE        | 89      
+  (4 rows)

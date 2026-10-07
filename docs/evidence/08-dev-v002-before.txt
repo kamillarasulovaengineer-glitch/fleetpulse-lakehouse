@@ -1,11 +1,11 @@
-# dev BEFORE V002 run (code deployed by CI run 37660893237, git b91b9b8)
+# dev BEFORE V002 run (V002 code already deployed to dev by CI)
 
->>> SELECT version, name, applied_at FROM telematics.dev_kamilla_rasulova_engineer_dev._schema_migrations ORDER BY version
+>>> SELECT version, name, applied_at FROM telematics.dev_<user>_dev._schema_migrations ORDER BY version
   version | name           | applied_at              
   1       | initial_tables | 2026-10-07 13:13:55 EDT
   (1 rows)
 
->>> SELECT column_name, data_type FROM telematics.information_schema.columns WHERE table_schema = 'dev_kamilla_rasulova_engineer_dev' AND table_name = 'gold_truck_position' ORDER BY ordinal_position
+>>> SELECT column_name, data_type FROM telematics.information_schema.columns WHERE table_schema = 'dev_<user>_dev' AND table_name = 'gold_truck_position' ORDER BY ordinal_position
   column_name  | data_type
   truck_id     | STRING   
   event_ts     | TIMESTAMP

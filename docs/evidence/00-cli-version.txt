@@ -1,0 +1,2 @@
+$ databricks --version
+Databricks CLI v1.19.0
