@@ -16,6 +16,12 @@ variables:
   pipeline_pause_status:
     description: PAUSED or UNPAUSED.
     default: PAUSED
+  region_window_minutes:
+    description: Tumbling window size, in minutes, for gold_region_pings.
+    default: "5"
+  geofence_box:
+    description: Box behind gold_truck_position.in_geofence, as lat_min,lat_max,lon_min,lon_max.
+    default: "41.80,41.95,-87.75,-87.55" # downtown Chicago
   warehouse_id:
     description: SQL warehouse behind the dashboard.
     lookup:

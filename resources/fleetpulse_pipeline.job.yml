@@ -2,7 +2,7 @@ resources:
   jobs:
     fleetpulse_pipeline:
       name: fleetpulse-pipeline-${bundle.target}
-      description: Applies pending schema migrations, then moves pings landing -> bronze -> silver -> gold.
+      description: Applies pending schema migrations, then moves pings landing -> bronze -> silver -> the two gold tables.
       max_concurrent_runs: 1
       timeout_seconds: 3600
       tags:
@@ -23,6 +23,10 @@ resources:
           default: ${resources.volumes.landing.name}
         - name: checkpoint_volume
           default: ${resources.volumes.checkpoints.name}
+        - name: region_window_minutes
+          default: ${var.region_window_minutes}
+        - name: geofence_box
+          default: ${var.geofence_box}
 
       tasks:
         - task_key: migrate
@@ -55,3 +59,10 @@ resources:
             - task_key: seed_truck_details
           notebook_task:
             notebook_path: ../src/gold.py
+
+        - task_key: gold_region_windows
+          depends_on:
+            - task_key: silver
+            - task_key: seed_truck_details
+          notebook_task:
+            notebook_path: ../src/gold_region_windows.py

@@ -6,6 +6,7 @@ from pyspark.sql import functions as F
 dbutils.widgets.text("catalog", "telematics")
 dbutils.widgets.text("schema", "")
 dbutils.widgets.text("checkpoint_volume", "checkpoints")
+dbutils.widgets.text("geofence_box", "41.80,41.95,-87.75,-87.55")
 
 # COMMAND ----------
 
@@ -19,8 +20,8 @@ SILVER = f"{catalog}.{schema}.silver_pings"
 TRUCK_DETAILS = f"{catalog}.{schema}.truck_details"
 GOLD = f"{catalog}.{schema}.gold_truck_position"
 
-# downtown Chicago: lat_min, lat_max, lon_min, lon_max (same box as the V002 backfill)
-GEOFENCE = (41.80, 41.95, -87.75, -87.55)
+# lat_min,lat_max,lon_min,lon_max from the geofence_box bundle variable
+LAT_MIN, LAT_MAX, LON_MIN, LON_MAX = (float(v) for v in dbutils.widgets.get("geofence_box").split(","))
 
 # COMMAND ----------
 
@@ -41,7 +42,7 @@ def upsert_batch(batch_df, batch_id):
         .drop("_rn")
         .withColumn(
             "in_geofence",
-            F.col("latitude").between(GEOFENCE[0], GEOFENCE[1]) & F.col("longitude").between(GEOFENCE[2], GEOFENCE[3]),
+            F.col("latitude").between(LAT_MIN, LAT_MAX) & F.col("longitude").between(LON_MIN, LON_MAX),
         )
         .withColumn("updated_at", F.current_timestamp())
     )

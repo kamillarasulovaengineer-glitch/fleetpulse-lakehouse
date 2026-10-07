@@ -11,15 +11,14 @@
       ]
     },
     {
-      "name": "pings_5min",
-      "displayName": "Pings per region per 5 minutes",
+      "name": "region_windows",
+      "displayName": "Pings per region per window (gold)",
       "queryLines": [
-        "SELECT window(from_utc_timestamp(s.event_ts, 'America/New_York'), '5 minutes').start AS window_start,\n",
-        "       coalesce(d.region, 'unknown') AS region,\n",
-        "       count(*) AS pings\n",
-        "FROM silver_pings s\n",
-        "LEFT JOIN truck_details d USING (truck_id)\n",
-        "GROUP BY ALL"
+        "SELECT from_utc_timestamp(window_start, 'America/New_York') AS window_start,\n",
+        "       region,\n",
+        "       pings\n",
+        "FROM gold_region_pings\n",
+        "WHERE window_minutes = (SELECT window_minutes FROM gold_region_pings ORDER BY updated_at DESC LIMIT 1)"
       ]
     },
     {
@@ -40,7 +39,7 @@
         {
           "widget": {
             "name": "title",
-            "textbox_spec": "# fleetpulse\nLatest position of every truck (gold), ping volume by region (silver) and data quality."
+            "textbox_spec": "# fleetpulse\nLatest position of every truck and ping volume by region, both from gold, plus data quality."
           },
           "position": {
             "x": 0,
@@ -247,7 +246,7 @@
               {
                 "name": "main_query",
                 "query": {
-                  "datasetName": "pings_5min",
+                  "datasetName": "region_windows",
                   "disaggregated": false,
                   "fields": [
                     {
@@ -271,7 +270,7 @@
               "widgetType": "bar",
               "frame": {
                 "showTitle": true,
-                "title": "Pings per region, 5-minute windows"
+                "title": "Pings per region per window"
               },
               "encodings": {
                 "x": {
