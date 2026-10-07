@@ -11,10 +11,6 @@ on:
 permissions:
   contents: read
 
-env:
-  DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-  DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
-
 jobs:
   validate:
     # PRs from forks get no secrets
@@ -28,6 +24,10 @@ jobs:
         run: pipx run ruff==0.16.10 check . && pipx run ruff==0.16.10 format --check .
       - uses: databricks/setup-cli@v1.19.0
       - name: Validate
+        # the token stays out of the lint step, which runs a package from PyPI
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
         run: databricks bundle validate -t "$TARGET"
 
   deploy:
@@ -38,6 +38,8 @@ jobs:
       group: deploy-${{ github.ref_name }}
       cancel-in-progress: false
     env:
+      DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
       TARGET: ${{ (github.ref_name == 'main' && 'prod') || (github.ref_name == 'test' && 'test') || 'dev' }}
       PAUSE: ${{ vars.PIPELINE_PAUSE_STATUS }} # per GitHub environment (PAUSED on test/prod: Free Edition quota)
     steps:

@@ -21,9 +21,9 @@ TRUCK_DETAILS = f"{catalog}.{schema}.truck_details"
 GOLD = f"{catalog}.{schema}.gold_truck_position"
 
 try:
-    LAT_MIN, LAT_MAX, LON_MIN, LON_MAX = (float(v) for v in params["geofence_box"].split(","))
+    LAT_MIN, LAT_MAX, LON_MIN, LON_MAX = (float(v) for v in params["geofence_box"].replace(",", " ").split())
 except ValueError:
-    raise ValueError("geofence_box must be lat_min,lat_max,lon_min,lon_max") from None
+    raise ValueError("geofence_box must be 'lat_min lat_max lon_min lon_max'") from None
 if not (LAT_MIN < LAT_MAX and LON_MIN < LON_MAX):
     raise ValueError("geofence_box needs lat_min < lat_max and lon_min < lon_max")
 
@@ -83,6 +83,10 @@ box = {"lat_min": LAT_MIN, "lat_max": LAT_MAX, "lon_min": LON_MIN, "lon_max": LO
 in_box = "(latitude BETWEEN :lat_min AND :lat_max AND longitude BETWEEN :lon_min AND :lon_max)"
 stale = spark.sql(f"SELECT count(*) AS n FROM {GOLD} WHERE in_geofence IS DISTINCT FROM {in_box}", args=box).first().n
 if stale:
-    spark.sql(f"UPDATE {GOLD} SET in_geofence = {in_box} WHERE in_geofence IS DISTINCT FROM {in_box}", args=box)
+    spark.sql(
+        f"UPDATE {GOLD} SET in_geofence = {in_box}, updated_at = current_timestamp() "
+        f"WHERE in_geofence IS DISTINCT FROM {in_box}",
+        args=box,
+    )
 
 dbutils.notebook.exit(f"gold_truck_position: {spark.table(GOLD).count()} trucks, geofence re-flagged {stale}")

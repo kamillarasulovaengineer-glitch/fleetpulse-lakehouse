@@ -5,11 +5,13 @@
 #
 #   bash scripts/create_catalog.sh [catalog]        default: telematics
 set -euo pipefail
+export MSYS_NO_PATHCONV=1 # Git Bash on Windows would turn /api/... into a file path
 
 catalog="${1:-telematics}"
 warehouse_name="${WAREHOUSE_NAME:-Serverless Starter Warehouse}"
 
-warehouse_id=$(databricks warehouses list 2>/dev/null | awk -v name="$warehouse_name" 'index($0, name) { print $1; exit }')
+command -v databricks >/dev/null || { echo "databricks CLI not found on PATH" >&2; exit 1; }
+warehouse_id=$(databricks warehouses list | awk -v name="$warehouse_name" 'index($0, name) { print $1; exit }')
 if [ -z "$warehouse_id" ]; then
   echo "SQL warehouse '$warehouse_name' not found; set WAREHOUSE_NAME" >&2
   exit 1

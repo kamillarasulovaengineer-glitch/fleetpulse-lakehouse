@@ -1,7 +1,8 @@
 # Design notes
 
 - **Structured Streaming over Lakeflow.** It keeps idempotency and schema changes explicit: every
-  write is a MERGE or a transactional append, every table comes from a numbered migration. Lakeflow
+  write is a MERGE on a natural key, a `txnVersion`-guarded append or an idempotent UPDATE, and every
+  table except the migration ledger comes from a numbered migration. Lakeflow
   is less code, but it owns the table lifecycle and schema changes often mean a full refresh.
 - **Triggers.** `availableNow` everywhere: serverless has no processing-time triggers, and a scheduled
   run that drains what has landed and stops only costs compute while there is work.
@@ -30,8 +31,10 @@
   drop). Rollback: redeploy the previous commit, which works because writers name their MERGE
   columns; the schema only moves forward, and `RESTORE TABLE` is kept for bad data.
 - **CI/CD.** Branches `dev`, `test`, `main` map to dev, test, prod: a pull request lints and validates
-  against its target, the merge deploys and runs the pipeline. Next: OIDC instead of a PAT, a service
-  principal for `run_as`, reviewers on `prod`.
+  against its target, the merge deploys and runs the pipeline. People never write to prod: in a shared workspace a CI
+  service principal (OIDC, not a PAT) owns the prod schema and is the jobs' `run_as`, people get
+  `SELECT` by grant, and `prod` has required reviewers. On Free Edition one user owns everything, so
+  here that is a convention.
 - **Scaling to 100k+ trucks.** Kafka or Event Hubs instead of files; bound the silver MERGE with an
   `event_date` window and liquid clustering on `(event_date, truck_id)`; alert on stream lag and
   quarantine rate.
