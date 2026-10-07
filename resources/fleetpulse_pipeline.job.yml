@@ -1,0 +1,58 @@
+resources:
+  jobs:
+    fleetpulse_pipeline:
+      name: fleetpulse-pipeline-${bundle.target}
+      description: Applies pending schema migrations, then moves pings landing -> bronze -> silver -> gold.
+      # The streams share checkpoints, so two overlapping runs must never happen.
+      max_concurrent_runs: 1
+      timeout_seconds: 3600
+      tags:
+        project: fleetpulse
+        env: ${bundle.target}
+
+      schedule:
+        quartz_cron_expression: ${var.pipeline_cron}
+        timezone_id: UTC
+        pause_status: ${var.pipeline_pause_status}
+
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: schema
+          default: ${resources.schemas.fleetpulse.name}
+        - name: landing_volume
+          default: ${resources.volumes.landing.name}
+        - name: checkpoint_volume
+          default: ${resources.volumes.checkpoints.name}
+
+      tasks:
+        - task_key: migrate
+          notebook_task:
+            notebook_path: ../src/migrate.py
+            base_parameters:
+              migrations_dir: ${workspace.file_path}/src/migrations
+
+        - task_key: seed_truck_details
+          depends_on:
+            - task_key: migrate
+          notebook_task:
+            notebook_path: ../src/seed_truck_details.py
+
+        - task_key: bronze
+          depends_on:
+            - task_key: migrate
+          notebook_task:
+            notebook_path: ../src/bronze.py
+
+        - task_key: silver
+          depends_on:
+            - task_key: bronze
+          notebook_task:
+            notebook_path: ../src/silver.py
+
+        - task_key: gold
+          depends_on:
+            - task_key: silver
+            - task_key: seed_truck_details
+          notebook_task:
+            notebook_path: ../src/gold.py
