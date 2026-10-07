@@ -1,0 +1,29 @@
+name: bundle
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: fleetpulse-dev
+  cancel-in-progress: false
+
+jobs:
+  dev:
+    runs-on: ubuntu-latest
+    env:
+      DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: databricks/setup-cli@v1.19.0
+
+      - name: Validate
+        run: databricks bundle validate -t dev
+
+      - name: Deploy to dev
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        run: databricks bundle deploy -t dev
