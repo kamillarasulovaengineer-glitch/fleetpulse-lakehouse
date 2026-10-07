@@ -19,6 +19,9 @@ SILVER = f"{catalog}.{schema}.silver_pings"
 TRUCK_DETAILS = f"{catalog}.{schema}.truck_details"
 GOLD = f"{catalog}.{schema}.gold_truck_position"
 
+# downtown Chicago: lat_min, lat_max, lon_min, lon_max (same box as the V002 backfill)
+GEOFENCE = (41.80, 41.95, -87.75, -87.55)
+
 # COMMAND ----------
 
 truck_details = spark.read.table(TRUCK_DETAILS).drop("updated_at")
@@ -36,6 +39,10 @@ def upsert_batch(batch_df, batch_id):
         batch_df.withColumn("_rn", F.row_number().over(latest_per_truck))
         .filter("_rn = 1")
         .drop("_rn")
+        .withColumn(
+            "in_geofence",
+            F.col("latitude").between(GEOFENCE[0], GEOFENCE[1]) & F.col("longitude").between(GEOFENCE[2], GEOFENCE[3]),
+        )
         .withColumn("updated_at", F.current_timestamp())
     )
     updates.createOrReplaceTempView("gold_updates")
