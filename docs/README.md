@@ -32,6 +32,6 @@ Taken from the workspace after the V002 promotion. The user is redacted, times a
 | [07 gold columns](screenshots/07-prod-gold-columns.png) | gold after V002, including `in_geofence` |
 | [08 gold sample](screenshots/08-prod-gold-sample.png) | gold rows joined with `truck_details` |
 | [09 dashboard](screenshots/09-prod-dashboard.png) | fleet overview dashboard in prod |
-| [10 CI](screenshots/10-github-actions.png) | GitHub Actions: validate and deploy dev on every push |
+| [10 CI](screenshots/10-github-actions.png) | GitHub Actions runs (taken when CI deployed only dev; it now maps `dev`, `test`, `main` to dev, test, prod) |
 
 ![prod dashboard](screenshots/09-prod-dashboard.png)

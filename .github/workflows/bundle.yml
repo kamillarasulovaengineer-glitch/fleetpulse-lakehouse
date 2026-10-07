@@ -1,0 +1,51 @@
+name: bundle
+
+# Branch -> target: dev -> dev, test -> test, main -> prod.
+# A pull request validates the bundle against the target of the branch it merges into;
+# the merge (a push to that branch) deploys it.
+on:
+  pull_request:
+    branches: [dev, test, main]
+  push:
+    branches: [dev, test, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+  DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+  # Free Edition has a daily compute quota, so schedules stay paused unless the
+  # PIPELINE_PAUSE_STATUS repository variable is set to UNPAUSED.
+  BUNDLE_VAR_pipeline_pause_status: ${{ vars.PIPELINE_PAUSE_STATUS || 'PAUSED' }}
+
+jobs:
+  validate:
+    # PRs from forks get no secrets
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    env:
+      TARGET: ${{ (github.base_ref == 'main' && 'prod') || (github.base_ref == 'test' && 'test') || 'dev' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: databricks/setup-cli@v1.19.0
+      - name: Validate
+        run: databricks bundle validate -t "$TARGET"
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment: ${{ (github.ref_name == 'main' && 'prod') || (github.ref_name == 'test' && 'test') || 'dev' }}
+    concurrency:
+      group: deploy-${{ github.ref_name }}
+      cancel-in-progress: false
+    env:
+      TARGET: ${{ (github.ref_name == 'main' && 'prod') || (github.ref_name == 'test' && 'test') || 'dev' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: databricks/setup-cli@v1.19.0
+      - name: Validate
+        run: databricks bundle validate -t "$TARGET"
+      - name: Deploy
+        run: databricks bundle deploy -t "$TARGET"

@@ -40,9 +40,10 @@ same commit deployed to dev, test, then prod. Changes stay additive; a rename wo
 switch readers, drop. Rollback is redeploying the previous commit: writers name their MERGE columns,
 so old code keeps working against a newer schema. The schema itself only moves forward (a V003 that
 reverses V002); `RESTORE TABLE` would leave the migration ledger ahead of the table and, on silver,
-break the stream gold reads, so it's for bad data, not for undoing a migration. For real,
-prod would also be enforced: jobs `run_as` a service principal, humans `SELECT` only, deploys from CI
-on a tag behind an approval, OIDC instead of a PAT.
+break the stream gold reads, so it's for bad data, not for undoing a migration. CI/CD maps
+branches to targets (`dev`, `test`, `main` -> prod): a pull request validates against the target it
+merges into and the merge deploys it. For real, prod would also be enforced: jobs `run_as` a service
+principal, humans `SELECT` only, required reviewers on the `prod` environment, OIDC instead of a PAT.
 
 **Scaling to 100k+ trucks.** Kafka or Event Hubs instead of files. Bound the silver MERGE with an
 `event_date` lateness window and liquid clustering on `(event_date, truck_id)`, or use

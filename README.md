@@ -27,7 +27,7 @@ src/
   generate_pings.py
   bronze.py  silver.py  gold.py
   dashboards/fleet_overview.lvdash.json
-.github/workflows/deploy-dev.yml   validate on PR, deploy dev on push to main
+.github/workflows/bundle.yml       CI/CD: dev -> dev, test -> test, main -> prod
 docs/                              data-flow diagram, CLI logs and screenshots from the runs
 ```
 
@@ -126,7 +126,22 @@ Tables are never created or altered by hand, in any environment.
 `prod`, including `DESCRIBE HISTORY` showing the `ADD COLUMNS` done by the pipeline job, is in
 [docs/evidence](docs/evidence/).
 
-## CI
+## CI/CD
 
-`.github/workflows/deploy-dev.yml` validates the bundle on every PR and deploys `dev` on push to
-`main`. It needs two repository secrets: `DATABRICKS_HOST` and `DATABRICKS_TOKEN`.
+Each long-lived branch maps to one target:
+
+| Branch | Target |
+|--------|--------|
+| `dev`  | dev    |
+| `test` | test   |
+| `main` | prod   |
+
+`.github/workflows/bundle.yml` validates the bundle against the target of the branch a pull request
+merges into, and deploys that target when the pull request is merged. A change moves
+`feature -> dev -> test -> main`, one pull request per step, so it reaches prod only after it has been
+deployed to dev and test.
+
+Setup: repository secrets `DATABRICKS_HOST` and `DATABRICKS_TOKEN`. Schedules are deployed paused
+unless the repository variable `PIPELINE_PAUSE_STATUS` is set to `UNPAUSED` (Free Edition quota).
+Deploys run as GitHub environments `dev`, `test` and `prod`, so required reviewers can be added to
+`prod` without touching the workflow.
