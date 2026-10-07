@@ -16,6 +16,10 @@ variables:
   pipeline_pause_status:
     description: PAUSED or UNPAUSED.
     default: PAUSED
+  warehouse_id:
+    description: SQL warehouse behind the dashboard.
+    lookup:
+      warehouse: Serverless Starter Warehouse
 
 targets:
   dev:

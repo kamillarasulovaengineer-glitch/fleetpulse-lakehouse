@@ -1,0 +1,8 @@
+resources:
+  dashboards:
+    fleet_overview:
+      display_name: fleetpulse fleet overview (${bundle.target})
+      file_path: ../src/dashboards/fleet_overview.lvdash.json
+      warehouse_id: ${var.warehouse_id}
+      dataset_catalog: ${var.catalog}
+      dataset_schema: ${resources.schemas.fleetpulse.name}

@@ -1,0 +1,670 @@
+{
+  "datasets": [
+    {
+      "name": "positions",
+      "displayName": "Current truck positions",
+      "queryLines": [
+        "SELECT truck_id, driver, region, home_depot, make, model,\n",
+        "       from_utc_timestamp(event_ts, 'America/New_York') AS last_ping_et,\n",
+        "       latitude, longitude, in_geofence\n",
+        "FROM gold_truck_position"
+      ]
+    },
+    {
+      "name": "pings_5min",
+      "displayName": "Pings per region per 5 minutes",
+      "queryLines": [
+        "SELECT window(from_utc_timestamp(s.event_ts, 'America/New_York'), '5 minutes').start AS window_start,\n",
+        "       coalesce(d.region, 'unknown') AS region,\n",
+        "       count(*) AS pings\n",
+        "FROM silver_pings s\n",
+        "LEFT JOIN truck_details d USING (truck_id)\n",
+        "GROUP BY ALL"
+      ]
+    },
+    {
+      "name": "quality",
+      "displayName": "Silver vs quarantine",
+      "queryLines": [
+        "SELECT clean, quarantined, round(100.0 * quarantined / nullif(clean + quarantined, 0), 1) AS quarantine_pct\n",
+        "FROM (SELECT (SELECT count(*) FROM silver_pings) AS clean,\n",
+        "             (SELECT count(*) FROM silver_pings_quarantine) AS quarantined)"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "overview",
+      "displayName": "Fleet overview",
+      "layout": [
+        {
+          "widget": {
+            "name": "title",
+            "textbox_spec": "# fleetpulse\nLatest position of every truck (gold), ping volume by region (silver) and data quality."
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "trucks",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "positions",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "name": "count(*)",
+                      "expression": "COUNT(`*`)"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "frame": {
+                "showTitle": true,
+                "title": "Trucks reporting"
+              },
+              "encodings": {
+                "value": {
+                  "fieldName": "count(*)",
+                  "displayName": "Trucks"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 2,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "in_geofence",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "positions",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "name": "count_if(in_geofence)",
+                      "expression": "COUNT_IF(`in_geofence`)"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "frame": {
+                "showTitle": true,
+                "title": "Inside downtown geofence"
+              },
+              "encodings": {
+                "value": {
+                  "fieldName": "count_if(in_geofence)",
+                  "displayName": "Trucks"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 2,
+            "y": 2,
+            "width": 2,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "quarantine_pct",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "quality",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "name": "sum(quarantine_pct)",
+                      "expression": "SUM(`quarantine_pct`)"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "frame": {
+                "showTitle": true,
+                "title": "Quarantined pings (%)"
+              },
+              "encodings": {
+                "value": {
+                  "fieldName": "sum(quarantine_pct)",
+                  "displayName": "%"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 2,
+            "width": 2,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "positions_scatter",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "positions",
+                  "disaggregated": true,
+                  "fields": [
+                    {
+                      "name": "longitude",
+                      "expression": "`longitude`"
+                    },
+                    {
+                      "name": "latitude",
+                      "expression": "`latitude`"
+                    },
+                    {
+                      "name": "region",
+                      "expression": "`region`"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "scatter",
+              "frame": {
+                "showTitle": true,
+                "title": "Truck positions"
+              },
+              "encodings": {
+                "x": {
+                  "fieldName": "longitude",
+                  "displayName": "Longitude",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "axis": {
+                    "title": "Longitude"
+                  }
+                },
+                "y": {
+                  "fieldName": "latitude",
+                  "displayName": "Latitude",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "axis": {
+                    "title": "Latitude"
+                  }
+                },
+                "color": {
+                  "fieldName": "region",
+                  "displayName": "Region",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 4,
+            "width": 3,
+            "height": 7
+          }
+        },
+        {
+          "widget": {
+            "name": "pings_by_region",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "pings_5min",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "name": "window_start",
+                      "expression": "`window_start`"
+                    },
+                    {
+                      "name": "sum(pings)",
+                      "expression": "SUM(`pings`)"
+                    },
+                    {
+                      "name": "region",
+                      "expression": "`region`"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "frame": {
+                "showTitle": true,
+                "title": "Pings per region, 5-minute windows"
+              },
+              "encodings": {
+                "x": {
+                  "fieldName": "window_start",
+                  "displayName": "Window start (ET)",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "axis": {
+                    "title": "Window start (ET)"
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(pings)",
+                  "displayName": "Pings",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "axis": {
+                    "title": "Pings"
+                  }
+                },
+                "color": {
+                  "fieldName": "region",
+                  "displayName": "Region",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 4,
+            "width": 3,
+            "height": 7
+          }
+        },
+        {
+          "widget": {
+            "name": "positions_table",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "positions",
+                  "disaggregated": true,
+                  "fields": [
+                    {
+                      "name": "truck_id",
+                      "expression": "`truck_id`"
+                    },
+                    {
+                      "name": "driver",
+                      "expression": "`driver`"
+                    },
+                    {
+                      "name": "region",
+                      "expression": "`region`"
+                    },
+                    {
+                      "name": "home_depot",
+                      "expression": "`home_depot`"
+                    },
+                    {
+                      "name": "make",
+                      "expression": "`make`"
+                    },
+                    {
+                      "name": "model",
+                      "expression": "`model`"
+                    },
+                    {
+                      "name": "last_ping_et",
+                      "expression": "`last_ping_et`"
+                    },
+                    {
+                      "name": "latitude",
+                      "expression": "`latitude`"
+                    },
+                    {
+                      "name": "longitude",
+                      "expression": "`longitude`"
+                    },
+                    {
+                      "name": "in_geofence",
+                      "expression": "`in_geofence`"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "version": 1,
+              "widgetType": "table",
+              "frame": {
+                "showTitle": true,
+                "title": "Fleet"
+              },
+              "allowHTMLByDefault": false,
+              "condensed": true,
+              "withRowNumber": false,
+              "itemsPerPage": 25,
+              "paginationSize": "default",
+              "invisibleColumns": [],
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "truck_id",
+                    "displayName": "truck_id",
+                    "title": "Truck",
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 100000,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "allowSearch": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "highlightLinks": false,
+                    "imageHeight": "",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "linkOpenInNewTab": true,
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "preserveWhitespace": false,
+                    "useMonospaceFont": false
+                  },
+                  {
+                    "fieldName": "driver",
+                    "displayName": "driver",
+                    "title": "Driver",
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 100001,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "allowSearch": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "highlightLinks": false,
+                    "imageHeight": "",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "linkOpenInNewTab": true,
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "preserveWhitespace": false,
+                    "useMonospaceFont": false
+                  },
+                  {
+                    "fieldName": "region",
+                    "displayName": "region",
+                    "title": "Region",
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 100002,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "allowSearch": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "highlightLinks": false,
+                    "imageHeight": "",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "linkOpenInNewTab": true,
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "preserveWhitespace": false,
+                    "useMonospaceFont": false
+                  },
+                  {
+                    "fieldName": "home_depot",
+                    "displayName": "home_depot",
+                    "title": "Home depot",
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 100003,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "allowSearch": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "highlightLinks": false,
+                    "imageHeight": "",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "linkOpenInNewTab": true,
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "preserveWhitespace": false,
+                    "useMonospaceFont": false
+                  },
+                  {
+                    "fieldName": "make",
+                    "displayName": "make",
+                    "title": "Make",
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 100004,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "allowSearch": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "highlightLinks": false,
+                    "imageHeight": "",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "linkOpenInNewTab": true,
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "preserveWhitespace": false,
+                    "useMonospaceFont": false
+                  },
+                  {
+                    "fieldName": "model",
+                    "displayName": "model",
+                    "title": "Model",
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 100005,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "allowSearch": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "highlightLinks": false,
+                    "imageHeight": "",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "linkOpenInNewTab": true,
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "preserveWhitespace": false,
+                    "useMonospaceFont": false
+                  },
+                  {
+                    "fieldName": "last_ping_et",
+                    "displayName": "last_ping_et",
+                    "title": "Last ping (ET)",
+                    "type": "datetime",
+                    "displayAs": "datetime",
+                    "visible": true,
+                    "order": 100006,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "allowSearch": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "highlightLinks": false,
+                    "imageHeight": "",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "linkOpenInNewTab": true,
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "preserveWhitespace": false,
+                    "useMonospaceFont": false,
+                    "dateTimeFormat": "YYYY-MM-DD HH:mm:ss"
+                  },
+                  {
+                    "fieldName": "latitude",
+                    "displayName": "latitude",
+                    "title": "Lat",
+                    "type": "float",
+                    "displayAs": "number",
+                    "visible": true,
+                    "order": 100007,
+                    "alignContent": "right",
+                    "allowHTML": false,
+                    "allowSearch": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "highlightLinks": false,
+                    "imageHeight": "",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "linkOpenInNewTab": true,
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "preserveWhitespace": false,
+                    "useMonospaceFont": false,
+                    "numberFormat": "0.00000"
+                  },
+                  {
+                    "fieldName": "longitude",
+                    "displayName": "longitude",
+                    "title": "Lon",
+                    "type": "float",
+                    "displayAs": "number",
+                    "visible": true,
+                    "order": 100008,
+                    "alignContent": "right",
+                    "allowHTML": false,
+                    "allowSearch": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "highlightLinks": false,
+                    "imageHeight": "",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "linkOpenInNewTab": true,
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "preserveWhitespace": false,
+                    "useMonospaceFont": false,
+                    "numberFormat": "0.00000"
+                  },
+                  {
+                    "fieldName": "in_geofence",
+                    "displayName": "in_geofence",
+                    "title": "In geofence",
+                    "type": "boolean",
+                    "displayAs": "boolean",
+                    "visible": true,
+                    "order": 100009,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "allowSearch": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "highlightLinks": false,
+                    "imageHeight": "",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "linkOpenInNewTab": true,
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "preserveWhitespace": false,
+                    "useMonospaceFont": false
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 11,
+            "width": 6,
+            "height": 8
+          }
+        }
+      ]
+    }
+  ]
+}
