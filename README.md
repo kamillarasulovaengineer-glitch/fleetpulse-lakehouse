@@ -1,7 +1,7 @@
 # fleetpulse
 
 GPS pings from a truck fleet, streamed through bronze / silver / gold on Databricks and joined with
-truck reference data. Everything (schema, volumes, tables, jobs) is deployed by one bundle to
+truck reference data. Everything (schema, volumes, tables, jobs, dashboard) is deployed by one bundle to
 `dev`, `test` and `prod`.
 
 ```
@@ -10,7 +10,7 @@ landing volume ──Auto Loader──> bronze_pings ──MERGE──> silver_p
                                                   └──> silver_pings_quarantine   truck_details
 ```
 
-Design notes and trade-offs are in [DESIGN.md](DESIGN.md).
+Design notes and trade-offs are in [DESIGN.md](DESIGN.md). Proof that it runs is in [docs/](docs/).
 
 ## Layout
 
@@ -20,13 +20,16 @@ resources/
   unity_catalog.yml                schema + landing / checkpoints volumes
   fleetpulse_pipeline.job.yml      migrate -> seed_truck_details, bronze -> silver -> gold
   fleetpulse_simulator.job.yml     synthetic ping generator
+  fleetpulse.dashboard.yml         fleet overview dashboard
 src/
   migrations/V*.sql                versioned DDL, applied in order by migrate.py
   migrate.py
   seed_truck_details.py
   generate_pings.py
   bronze.py  silver.py  gold.py
+  dashboards/fleet_overview.lvdash.json
 .github/workflows/deploy-dev.yml   validate on PR, deploy dev on push to main
+docs/                              CLI logs and screenshots from the runs
 ```
 
 ## Targets
@@ -38,7 +41,8 @@ src/
 | pipeline job      | `[dev <user>] fleetpulse-pipeline-dev` | `fleetpulse-pipeline-test` | `fleetpulse-pipeline-prod` |
 | schedule          | paused                       | hourly                   | every 15 minutes           |
 
-Development mode prefixes names with the deploying user so people don't collide in dev.
+Schedules run on US Eastern time. Development mode prefixes names with the deploying user so people
+don't collide in dev.
 `databricks bundle summary -t <target>` prints the exact names.
 
 ## Prerequisites
@@ -82,12 +86,14 @@ databricks bundle deploy -t prod && databricks bundle run fleetpulse_simulator -
 ```
 
 More data: `databricks bundle run fleetpulse_simulator -t dev --params batches=50`.
+On Free Edition I deploy `test` and `prod` with `--var pipeline_pause_status=PAUSED` between demos so
+the schedules don't burn the daily compute quota; deploy without the flag to turn them back on.
 Running the pipeline again only processes files that arrived since the last run.
 
 ## Checking the result
 
 ```sql
-SELECT truck_id, driver, region, home_depot, make, model, event_ts, latitude, longitude
+SELECT truck_id, driver, region, home_depot, make, model, event_ts, latitude, longitude, in_geofence
 FROM telematics.prod.gold_truck_position
 ORDER BY region, truck_id;
 
@@ -98,6 +104,13 @@ SELECT reason, count(*) FROM telematics.prod.silver_pings_quarantine GROUP BY re
 SELECT * FROM telematics.prod._schema_migrations ORDER BY version;
 ```
 
+## Dashboard
+
+`fleetpulse fleet overview (<target>)` is deployed with the bundle to every target. Its queries use
+unqualified table names and the bundle points them at the target's catalog and schema
+(`dataset_catalog` / `dataset_schema`); the SQL warehouse is looked up by name. Times are shown in
+US Eastern.
+
 ## Changing a table
 
 Tables are never created or altered by hand, in any environment.
@@ -107,6 +120,10 @@ Tables are never created or altered by hand, in any environment.
 2. Change the code that writes the table, in the same commit.
 3. Deploy and run `dev`, then `test`, then `prod`. The `migrate` task runs first in every
    pipeline run, so the new column exists before any writer needs it.
+
+`V002__gold_truck_position_add_in_geofence.sql` went through exactly this; the before/after for
+`prod`, including `DESCRIBE HISTORY` showing the `ADD COLUMNS` done by the pipeline job, is in
+[docs/evidence](docs/evidence/).
 
 ## CI
 
