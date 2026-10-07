@@ -17,7 +17,7 @@ Design notes and trade-offs are in [DESIGN.md](DESIGN.md). Proof that it runs is
 databricks.yml                     targets and variables
 resources/
   unity_catalog.yml                schema + landing / checkpoints volumes
-  fleetpulse_pipeline.job.yml      migrate -> seed_truck_details, bronze -> silver -> gold
+  fleetpulse_pipeline.job.yml      migrate -> seed_truck_details, bronze -> silver -> both gold tables
   fleetpulse_simulator.job.yml     synthetic ping generator
   fleetpulse.dashboard.yml         fleet overview dashboard
 src/
@@ -25,7 +25,7 @@ src/
   migrate.py
   seed_truck_details.py
   generate_pings.py
-  bronze.py  silver.py  gold.py
+  bronze.py  silver.py  gold.py  gold_region_windows.py
   dashboards/fleet_overview.lvdash.json
 .github/workflows/bundle.yml       CI/CD: dev -> dev, test -> test, main -> prod
 docs/                              data-flow diagram, CLI logs and screenshots from the runs
@@ -43,6 +43,24 @@ docs/                              data-flow diagram, CLI logs and screenshots f
 Schedules run on US Eastern time. Development mode prefixes names with the deploying user so people
 don't collide in dev.
 `databricks bundle summary -t <target>` prints the exact names.
+
+## Configuration
+
+Everything that changes between environments or might be tuned is a bundle variable in
+`databricks.yml`. Override per target there, or for one deploy with `--var name=value`.
+
+| Variable | Default | Used for |
+|----------|---------|----------|
+| `catalog` | `telematics` | catalog that holds every target's schema |
+| `schema` | per target | `dev` (prefixed per user), `test`, `prod` |
+| `pipeline_cron` | hourly; prod every 15 min | pipeline schedule (US Eastern) |
+| `pipeline_pause_status` | `PAUSED`; test/prod `UNPAUSED` | whether the schedule runs |
+| `region_window_minutes` | `5` | tumbling window for `gold_region_pings` |
+| `geofence_box` | `41.80,41.95,-87.75,-87.55` | box behind `gold_truck_position.in_geofence` |
+| `warehouse_id` | looked up by name | SQL warehouse behind the dashboard |
+
+Example: `databricks bundle deploy -t dev --var region_window_minutes=10`. A new window size gets its
+own checkpoint, so the next run backfills it from all of silver; rows for other sizes stay.
 
 ## Prerequisites
 
@@ -95,6 +113,11 @@ Running the pipeline again only processes files that arrived since the last run.
 SELECT truck_id, driver, region, home_depot, make, model, event_ts, latitude, longitude, in_geofence
 FROM telematics.prod.gold_truck_position
 ORDER BY region, truck_id;
+
+-- pings per region per window (window size is a bundle variable)
+SELECT window_minutes, window_start, region, pings, trucks
+FROM telematics.prod.gold_region_pings
+ORDER BY window_start DESC, region;
 
 -- what was rejected and why
 SELECT reason, count(*) FROM telematics.prod.silver_pings_quarantine GROUP BY reason;

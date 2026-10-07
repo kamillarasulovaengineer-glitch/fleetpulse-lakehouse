@@ -15,6 +15,7 @@ flowchart LR
         trucks[("truck_details<br/>static Delta table")]
         join(("stream-static<br/>join"))
         gold["gold_truck_position<br/>latest ping per truck + in_geofence"]
+        goldwin["gold_region_pings<br/>pings per region per window<br/>(region_window_minutes)"]
     end
 
     dashboard["fleet overview dashboard"]
@@ -28,5 +29,7 @@ flowchart LR
     trucks -->|"broadcast, latest version<br/>each micro-batch"| join
     join -->|"MERGE on truck_id,<br/>forward in time only"| gold
     migrate -.->|"DDL, runs first"| bronze
+    silver -->|"recount touched windows"| goldwin
+    trucks -->|"region"| goldwin
     gold --> dashboard
-    silver --> dashboard
+    goldwin --> dashboard

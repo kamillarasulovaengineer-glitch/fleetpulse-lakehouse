@@ -11,6 +11,11 @@
 - **Stream-static join.** `truck_details` is a broadcast `spark.read.table`; being Delta, each
   micro-batch joins its latest version, so changes show up without a restart. Old gold rows refresh
   on the truck's next ping; history would need SCD2 and an as-of join.
+- **Two gold outputs.** `gold_truck_position` (latest ping per truck with a geofence flag) and
+  `gold_region_pings` (pings per region per tumbling window). The window size and the geofence are
+  bundle variables, not constants. The window table recounts each window a batch touches from
+  silver, so a replay can't double-count, and each window size has its own checkpoint, so a new
+  size backfills from the start.
 - **Checkpoints.** One per stream in the target's `checkpoints` volume. A killed run resumes from the
   last committed offset, and the replayed batch is harmless (MERGE on natural keys, quarantine append
   guarded by `txnVersion`). `max_concurrent_runs: 1` keeps runs off each other's checkpoints.
