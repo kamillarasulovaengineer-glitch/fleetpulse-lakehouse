@@ -2,21 +2,24 @@
 
 from pyspark.sql import functions as F
 
-dbutils.widgets.text("catalog", "telematics")
-dbutils.widgets.text("schema", "")
-dbutils.widgets.text("checkpoint_volume", "checkpoints")
+PARAMS = ("catalog", "schema", "checkpoint_volume")
+for name in PARAMS:
+    dbutils.widgets.text(name, "")
 
 # COMMAND ----------
 
-catalog = dbutils.widgets.get("catalog")
-schema = dbutils.widgets.get("schema")
-if not schema:
-    raise ValueError("schema is required")
+params = {name: dbutils.widgets.get(name) for name in PARAMS}
+missing = [name for name, value in params.items() if not value]
+if missing:
+    raise ValueError(f"missing job parameters: {', '.join(missing)}")
 
-checkpoints = f"/Volumes/{catalog}/{schema}/{dbutils.widgets.get('checkpoint_volume')}"
+catalog, schema = params["catalog"], params["schema"]
+checkpoints = f"/Volumes/{catalog}/{schema}/{params['checkpoint_volume']}"
 BRONZE = f"{catalog}.{schema}.bronze_pings"
 SILVER = f"{catalog}.{schema}.silver_pings"
 QUARANTINE = f"{catalog}.{schema}.silver_pings_quarantine"
+
+STREAM = "silver"  # checkpoint and quarantine txnAppId; rename to replay
 
 # COMMAND ----------
 
@@ -38,7 +41,6 @@ def upsert_batch(batch_df, batch_id):
         )
     )
 
-    # skipped by Delta if this batch was already committed; change the app id if the checkpoint is reset
     (
         checked.filter("_reason IS NOT NULL")
         .select(
@@ -52,7 +54,7 @@ def upsert_batch(batch_df, batch_id):
             F.col("_reason").alias("reason"),
             F.current_timestamp().alias("_quarantined_at"),
         )
-        .write.option("txnAppId", "fleetpulse_silver_quarantine")
+        .write.option("txnAppId", f"fleetpulse_{STREAM}_quarantine")
         .option("txnVersion", batch_id)
         .mode("append")
         .saveAsTable(QUARANTINE)
@@ -89,7 +91,7 @@ def upsert_batch(batch_df, batch_id):
 (
     spark.readStream.table(BRONZE)
     .writeStream.foreachBatch(upsert_batch)
-    .option("checkpointLocation", f"{checkpoints}/silver")
+    .option("checkpointLocation", f"{checkpoints}/{STREAM}")
     .trigger(availableNow=True)
     .start()
     .awaitTermination()

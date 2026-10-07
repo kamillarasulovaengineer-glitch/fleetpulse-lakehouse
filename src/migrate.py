@@ -4,17 +4,18 @@ import hashlib
 import re
 from pathlib import Path
 
-dbutils.widgets.text("catalog", "telematics")
-dbutils.widgets.text("schema", "")
-dbutils.widgets.text("migrations_dir", "")
+PARAMS = ("catalog", "schema", "migrations_dir")
+for name in PARAMS:
+    dbutils.widgets.text(name, "")
 
 # COMMAND ----------
 
-catalog = dbutils.widgets.get("catalog")
-schema = dbutils.widgets.get("schema")
-migrations_dir = dbutils.widgets.get("migrations_dir")
-if not schema or not migrations_dir:
-    raise ValueError("schema and migrations_dir are required")
+params = {name: dbutils.widgets.get(name) for name in PARAMS}
+missing = [name for name, value in params.items() if not value]
+if missing:
+    raise ValueError(f"missing job parameters: {', '.join(missing)}")
+
+catalog, schema, migrations_dir = params["catalog"], params["schema"], params["migrations_dir"]
 
 # COMMAND ----------
 

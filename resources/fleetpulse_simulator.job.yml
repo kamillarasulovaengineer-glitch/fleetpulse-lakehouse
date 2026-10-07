@@ -1,20 +1,18 @@
 resources:
   jobs:
     fleetpulse_simulator:
-      name: fleetpulse-simulator-${bundle.target}
+      name: ${bundle.name}-simulator-${bundle.target}
       description: Writes synthetic GPS ping files into the landing volume. Stands in for the real device feed.
       max_concurrent_runs: 1
       tags:
-        project: fleetpulse
+        project: ${bundle.name}
         env: ${bundle.target}
 
       parameters:
-        - name: catalog
-          default: ${var.catalog}
-        - name: schema
-          default: ${resources.schemas.fleetpulse.name}
-        - name: landing_volume
-          default: ${resources.volumes.landing.name}
+        - name: landing_path
+          default: /Volumes/${var.catalog}/${resources.schemas.fleetpulse.name}/${resources.volumes.landing.name}/pings
+        - name: fleet_size
+          default: ${var.fleet_size}
         - name: batches
           default: "20"
         - name: interval_seconds

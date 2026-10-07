@@ -2,23 +2,23 @@
 
 from pyspark.sql import functions as F
 
-dbutils.widgets.text("catalog", "telematics")
-dbutils.widgets.text("schema", "")
-dbutils.widgets.text("checkpoint_volume", "checkpoints")
-dbutils.widgets.text("region_window_minutes", "5")
+PARAMS = ("catalog", "schema", "checkpoint_volume", "region_window_minutes")
+for name in PARAMS:
+    dbutils.widgets.text(name, "")
 
 # COMMAND ----------
 
-catalog = dbutils.widgets.get("catalog")
-schema = dbutils.widgets.get("schema")
-if not schema:
-    raise ValueError("schema is required")
+params = {name: dbutils.widgets.get(name) for name in PARAMS}
+missing = [name for name, value in params.items() if not value]
+if missing:
+    raise ValueError(f"missing job parameters: {', '.join(missing)}")
 
-window_minutes = int(dbutils.widgets.get("region_window_minutes"))
+catalog, schema = params["catalog"], params["schema"]
+window_minutes = int(params["region_window_minutes"])
 if window_minutes <= 0:
     raise ValueError("region_window_minutes must be a positive number of minutes")
 
-checkpoints = f"/Volumes/{catalog}/{schema}/{dbutils.widgets.get('checkpoint_volume')}"
+checkpoints = f"/Volumes/{catalog}/{schema}/{params['checkpoint_volume']}"
 SILVER = f"{catalog}.{schema}.silver_pings"
 TRUCK_DETAILS = f"{catalog}.{schema}.truck_details"
 GOLD = f"{catalog}.{schema}.gold_region_pings"
@@ -30,14 +30,20 @@ WINDOW = f"{window_minutes} minutes"
 def upsert_batch(batch_df, batch_id):
     session = batch_df.sparkSession
 
-    # Recount every window this micro-batch touched from silver itself instead of adding the batch's
-    # counts to the old ones, so a replayed batch can't double-count.
-    touched = batch_df.select(F.window("event_ts", WINDOW).alias("w")).distinct()
+    # recount the touched time range from silver and replace it in gold
+    bounds = (
+        batch_df.select(F.window("event_ts", WINDOW).alias("w"))
+        .agg(F.min("w.start").alias("lo"), F.max("w.end").alias("hi"))
+        .first()
+    )
+    if bounds is None or bounds.lo is None:
+        return
+
     regions = session.read.table(TRUCK_DETAILS).select("truck_id", "region")
     counts = (
         session.read.table(SILVER)
+        .where((F.col("event_ts") >= F.lit(bounds.lo)) & (F.col("event_ts") < F.lit(bounds.hi)))
         .withColumn("w", F.window("event_ts", WINDOW))
-        .join(touched, "w")
         .join(F.broadcast(regions), "truck_id", "left")
         .groupBy(
             F.col("w.start").alias("window_start"),
@@ -54,19 +60,24 @@ def upsert_batch(batch_df, batch_id):
     set_clause = ", ".join(f"{c} = s.{c}" for c in cols)
     insert_cols = ", ".join(cols)
     insert_values = ", ".join(f"s.{c}" for c in cols)
-    session.sql(f"""
+    session.sql(
+        f"""
         MERGE INTO {GOLD} AS t
         USING region_window_updates AS s
         ON t.window_minutes = s.window_minutes AND t.window_start = s.window_start AND t.region = s.region
         WHEN MATCHED THEN UPDATE SET {set_clause}
         WHEN NOT MATCHED THEN INSERT ({insert_cols}) VALUES ({insert_values})
-    """)
+        WHEN NOT MATCHED BY SOURCE
+            AND t.window_minutes = :window_minutes AND t.window_start >= :lo AND t.window_start < :hi
+            THEN DELETE
+        """,
+        args={"window_minutes": window_minutes, "lo": bounds.lo, "hi": bounds.hi},
+    )
 
 
 # COMMAND ----------
 
-# One checkpoint per window size: changing region_window_minutes starts a fresh stream that replays
-# silver from the beginning and backfills the new size; rows for other sizes are left as they are.
+# one checkpoint per window size, so a new size backfills from the start
 (
     spark.readStream.table(SILVER)
     .select("truck_id", "event_ts")
@@ -77,6 +88,10 @@ def upsert_batch(batch_df, batch_id):
     .awaitTermination()
 )
 
-spark.table(GOLD).where(F.col("window_minutes") == window_minutes).orderBy("window_start", "region").show(
-    40, truncate=False
+summary = (
+    spark.table(GOLD)
+    .where(F.col("window_minutes") == window_minutes)
+    .agg(F.count("*").alias("rows"), F.coalesce(F.sum("pings"), F.lit(0)).alias("pings"))
 )
+row = summary.first()
+dbutils.notebook.exit(f"gold_region_pings: {row.rows} region windows of {window_minutes} min, {row.pings} pings")

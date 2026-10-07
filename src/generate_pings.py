@@ -6,26 +6,26 @@ import random
 import time
 from datetime import datetime, timezone
 
-dbutils.widgets.text("catalog", "telematics")
-dbutils.widgets.text("schema", "")
-dbutils.widgets.text("landing_volume", "landing")
-dbutils.widgets.text("batches", "20")
-dbutils.widgets.text("interval_seconds", "3")
+PARAMS = ("landing_path", "fleet_size", "batches", "interval_seconds")
+for name in PARAMS:
+    dbutils.widgets.text(name, "")
 
 # COMMAND ----------
 
-catalog = dbutils.widgets.get("catalog")
-schema = dbutils.widgets.get("schema")
-landing_volume = dbutils.widgets.get("landing_volume")
-batches = int(dbutils.widgets.get("batches"))
-interval_seconds = float(dbutils.widgets.get("interval_seconds"))
-if not schema:
-    raise ValueError("schema is required")
+params = {name: dbutils.widgets.get(name) for name in PARAMS}
+missing = [name for name, value in params.items() if not value]
+if missing:
+    raise ValueError(f"missing job parameters: {', '.join(missing)}")
 
-landing = f"/Volumes/{catalog}/{schema}/{landing_volume}/pings"
+landing = params["landing_path"]
+fleet_size = int(params["fleet_size"])
+batches = int(params["batches"])
+interval_seconds = float(params["interval_seconds"])
 
-TRUCKS = [f"TRK-{i:03d}" for i in range(1, 21)]
-LAT0, LON0 = 41.85, -87.65  # Chicago
+TRUCKS = [f"TRK-{i:03d}" for i in range(1, fleet_size + 1)]  # same ids as seed_truck_details
+CENTER_LAT, CENTER_LON = 41.85, -87.65  # Chicago
+SPREAD_DEG = 0.2
+PINGS_PER_FILE = (5, 15)
 
 # COMMAND ----------
 
@@ -33,8 +33,8 @@ LAT0, LON0 = 41.85, -87.65  # Chicago
 def make_ping(truck_id):
     return {
         "truck_id": truck_id,
-        "latitude": round(LAT0 + random.uniform(-0.2, 0.2), 6),
-        "longitude": round(LON0 + random.uniform(-0.2, 0.2), 6),
+        "latitude": round(CENTER_LAT + random.uniform(-SPREAD_DEG, SPREAD_DEG), 6),
+        "longitude": round(CENTER_LON + random.uniform(-SPREAD_DEG, SPREAD_DEG), 6),
         "event_ts": datetime.now(timezone.utc).isoformat(),
     }
 
@@ -42,7 +42,8 @@ def make_ping(truck_id):
 os.makedirs(landing, exist_ok=True)
 
 for batch in range(batches):
-    rows = [make_ping(random.choice(TRUCKS)) for _ in range(random.randint(5, 15))]
+    rows = [make_ping(random.choice(TRUCKS)) for _ in range(random.randint(*PINGS_PER_FILE))]
+    # planted: one duplicate, one missing latitude
     rows.append(dict(rows[0]))
     rows.append({**make_ping(random.choice(TRUCKS)), "latitude": None})
 

@@ -3,7 +3,7 @@ resources:
     fleetpulse:
       catalog_name: ${var.catalog}
       name: ${var.schema}
-      comment: Fleet telematics pipeline (${bundle.target}). Managed by the fleetpulse bundle; do not edit by hand.
+      comment: Fleet telematics pipeline (${bundle.target}). Managed by the ${bundle.name} bundle; do not edit by hand.
 
   volumes:
     landing:
@@ -18,4 +18,4 @@ resources:
       schema_name: ${resources.schemas.fleetpulse.name}
       name: checkpoints
       volume_type: MANAGED
-      comment: Streaming checkpoints and Auto Loader schema tracking. Deleting a folder here replays that stream.
+      comment: Streaming checkpoints and Auto Loader schema state. Never delete a folder here; to replay a stream, give it a new checkpoint name in code.

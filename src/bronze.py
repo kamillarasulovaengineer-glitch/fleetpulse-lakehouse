@@ -4,20 +4,19 @@ import os
 
 from pyspark.sql import functions as F
 
-dbutils.widgets.text("catalog", "telematics")
-dbutils.widgets.text("schema", "")
-dbutils.widgets.text("landing_volume", "landing")
-dbutils.widgets.text("checkpoint_volume", "checkpoints")
+PARAMS = ("catalog", "schema", "landing_path", "checkpoint_volume")
+for name in PARAMS:
+    dbutils.widgets.text(name, "")
 
 # COMMAND ----------
 
-catalog = dbutils.widgets.get("catalog")
-schema = dbutils.widgets.get("schema")
-if not schema:
-    raise ValueError("schema is required")
+params = {name: dbutils.widgets.get(name) for name in PARAMS}
+missing = [name for name, value in params.items() if not value]
+if missing:
+    raise ValueError(f"missing job parameters: {', '.join(missing)}")
 
-landing = f"/Volumes/{catalog}/{schema}/{dbutils.widgets.get('landing_volume')}/pings"
-checkpoints = f"/Volumes/{catalog}/{schema}/{dbutils.widgets.get('checkpoint_volume')}"
+catalog, schema, landing = params["catalog"], params["schema"], params["landing_path"]
+checkpoints = f"/Volumes/{catalog}/{schema}/{params['checkpoint_volume']}"
 
 
 def has_files(path):

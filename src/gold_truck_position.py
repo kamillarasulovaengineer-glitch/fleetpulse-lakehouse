@@ -3,29 +3,35 @@
 from pyspark.sql import Window
 from pyspark.sql import functions as F
 
-dbutils.widgets.text("catalog", "telematics")
-dbutils.widgets.text("schema", "")
-dbutils.widgets.text("checkpoint_volume", "checkpoints")
-dbutils.widgets.text("geofence_box", "41.80,41.95,-87.75,-87.55")
+PARAMS = ("catalog", "schema", "checkpoint_volume", "geofence_box")
+for name in PARAMS:
+    dbutils.widgets.text(name, "")
 
 # COMMAND ----------
 
-catalog = dbutils.widgets.get("catalog")
-schema = dbutils.widgets.get("schema")
-if not schema:
-    raise ValueError("schema is required")
+params = {name: dbutils.widgets.get(name) for name in PARAMS}
+missing = [name for name, value in params.items() if not value]
+if missing:
+    raise ValueError(f"missing job parameters: {', '.join(missing)}")
 
-checkpoints = f"/Volumes/{catalog}/{schema}/{dbutils.widgets.get('checkpoint_volume')}"
+catalog, schema = params["catalog"], params["schema"]
+checkpoints = f"/Volumes/{catalog}/{schema}/{params['checkpoint_volume']}"
 SILVER = f"{catalog}.{schema}.silver_pings"
 TRUCK_DETAILS = f"{catalog}.{schema}.truck_details"
 GOLD = f"{catalog}.{schema}.gold_truck_position"
 
-# lat_min,lat_max,lon_min,lon_max from the geofence_box bundle variable
-LAT_MIN, LAT_MAX, LON_MIN, LON_MAX = (float(v) for v in dbutils.widgets.get("geofence_box").split(","))
+try:
+    LAT_MIN, LAT_MAX, LON_MIN, LON_MAX = (float(v) for v in params["geofence_box"].split(","))
+except ValueError:
+    raise ValueError("geofence_box must be lat_min,lat_max,lon_min,lon_max") from None
+if not (LAT_MIN < LAT_MAX and LON_MIN < LON_MAX):
+    raise ValueError("geofence_box needs lat_min < lat_max and lon_min < lon_max")
 
 # COMMAND ----------
 
-truck_details = spark.read.table(TRUCK_DETAILS).drop("updated_at")
+truck_details = spark.read.table(TRUCK_DETAILS).select(
+    "truck_id", "make", "model", "capacity_lbs", "home_depot", "region", "driver"
+)
 
 positions = (
     spark.readStream.table(SILVER)
@@ -48,7 +54,7 @@ def upsert_batch(batch_df, batch_id):
     )
     updates.createOrReplaceTempView("gold_updates")
 
-    # named columns rather than SET * / INSERT *, so a column added to gold later doesn't break this writer
+    # named columns, not SET *, so older code survives a new gold column
     cols = updates.columns
     set_clause = ", ".join(f"{c} = s.{c}" for c in cols)
     insert_cols = ", ".join(cols)
@@ -72,4 +78,11 @@ def upsert_batch(batch_df, batch_id):
     .awaitTermination()
 )
 
-spark.table(GOLD).orderBy("truck_id").show(25, truncate=False)
+# apply a changed geofence_box to every truck, not only to those that pinged again
+box = {"lat_min": LAT_MIN, "lat_max": LAT_MAX, "lon_min": LON_MIN, "lon_max": LON_MAX}
+in_box = "(latitude BETWEEN :lat_min AND :lat_max AND longitude BETWEEN :lon_min AND :lon_max)"
+stale = spark.sql(f"SELECT count(*) AS n FROM {GOLD} WHERE in_geofence IS DISTINCT FROM {in_box}", args=box).first().n
+if stale:
+    spark.sql(f"UPDATE {GOLD} SET in_geofence = {in_box} WHERE in_geofence IS DISTINCT FROM {in_box}", args=box)
+
+dbutils.notebook.exit(f"gold_truck_position: {spark.table(GOLD).count()} trucks, geofence re-flagged {stale}")

@@ -71,7 +71,7 @@
               "widgetType": "counter",
               "frame": {
                 "showTitle": true,
-                "title": "Trucks reporting"
+                "title": "Trucks tracked"
               },
               "encodings": {
                 "value": {
@@ -111,7 +111,7 @@
               "widgetType": "counter",
               "frame": {
                 "showTitle": true,
-                "title": "Inside downtown geofence"
+                "title": "Inside geofence"
               },
               "encodings": {
                 "value": {

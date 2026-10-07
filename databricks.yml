@@ -6,7 +6,7 @@ include:
 
 variables:
   catalog:
-    description: Catalog shared by all targets. Created once, outside the bundle (see README).
+    description: Catalog shared by all targets. Created once by scripts/create_catalog.sh.
     default: telematics
   schema:
     description: Per-target schema that holds every table, volume and checkpoint.
@@ -16,6 +16,12 @@ variables:
   pipeline_pause_status:
     description: PAUSED or UNPAUSED.
     default: PAUSED
+  schedule_timezone:
+    description: Time zone the pipeline schedule is evaluated in.
+    default: America/New_York
+  fleet_size:
+    description: Number of trucks the simulator and the truck_details seed generate (TRK-001 ...).
+    default: "20"
   region_window_minutes:
     description: Tumbling window size, in minutes, for gold_region_pings.
     default: "5"
