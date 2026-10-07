@@ -32,20 +32,25 @@ positions = (
 
 def upsert_batch(batch_df, batch_id):
     latest_per_truck = Window.partitionBy("truck_id").orderBy(F.col("event_ts").desc())
-    (
+    updates = (
         batch_df.withColumn("_rn", F.row_number().over(latest_per_truck))
         .filter("_rn = 1")
         .drop("_rn")
         .withColumn("updated_at", F.current_timestamp())
-        .createOrReplaceTempView("gold_updates")
     )
+    updates.createOrReplaceTempView("gold_updates")
 
+    # named columns rather than SET * / INSERT *, so a column added to gold later doesn't break this writer
+    cols = updates.columns
+    set_clause = ", ".join(f"{c} = s.{c}" for c in cols)
+    insert_cols = ", ".join(cols)
+    insert_values = ", ".join(f"s.{c}" for c in cols)
     batch_df.sparkSession.sql(f"""
         MERGE INTO {GOLD} AS t
         USING gold_updates AS s
         ON t.truck_id = s.truck_id
-        WHEN MATCHED AND s.event_ts > t.event_ts THEN UPDATE SET *
-        WHEN NOT MATCHED THEN INSERT *
+        WHEN MATCHED AND s.event_ts > t.event_ts THEN UPDATE SET {set_clause}
+        WHEN NOT MATCHED THEN INSERT ({insert_cols}) VALUES ({insert_values})
     """)
 
 

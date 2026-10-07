@@ -58,7 +58,7 @@ def upsert_batch(batch_df, batch_id):
         .saveAsTable(QUARANTINE)
     )
 
-    (
+    updates = (
         checked.filter("_reason IS NULL")
         .select(
             "truck_id",
@@ -70,15 +70,17 @@ def upsert_batch(batch_df, batch_id):
             F.current_timestamp().alias("_processed_at"),
         )
         .dropDuplicates(["truck_id", "event_ts"])
-        .createOrReplaceTempView("silver_updates")
     )
+    updates.createOrReplaceTempView("silver_updates")
 
     # insert-only, so gold can keep streaming from silver
+    insert_cols = ", ".join(updates.columns)
+    insert_values = ", ".join(f"s.{c}" for c in updates.columns)
     batch_df.sparkSession.sql(f"""
         MERGE INTO {SILVER} AS t
         USING silver_updates AS s
         ON t.truck_id = s.truck_id AND t.event_ts = s.event_ts
-        WHEN NOT MATCHED THEN INSERT *
+        WHEN NOT MATCHED THEN INSERT ({insert_cols}) VALUES ({insert_values})
     """)
 
 
