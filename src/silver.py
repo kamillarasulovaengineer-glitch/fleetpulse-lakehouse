@@ -1,8 +1,4 @@
 # Databricks notebook source
-# bronze_pings -> silver_pings, rejects -> silver_pings_quarantine.
-# Types are applied here and invalid rows are quarantined with a reason. Duplicates are removed
-# within each micro-batch and against silver itself (insert-only MERGE on truck_id + event_ts),
-# so replaying a batch after a failure can't double-count anything.
 
 from pyspark.sql import functions as F
 
@@ -40,9 +36,7 @@ def upsert_batch(batch_df, batch_id):
         )
     )
 
-    # txnAppId + txnVersion make this append idempotent: if the same micro-batch is replayed,
-    # Delta sees the version was already committed and skips it. If the silver checkpoint is ever
-    # reset, batch ids restart from 0, so change the app id at the same time.
+    # skipped by Delta if this batch was already committed; change the app id if the checkpoint is reset
     (
         checked.filter("_reason IS NOT NULL")
         .select(
@@ -77,8 +71,7 @@ def upsert_batch(batch_df, batch_id):
         .createOrReplaceTempView("silver_updates")
     )
 
-    # Insert-only on purpose: silver never rewrites existing files, so it stays a valid
-    # append-only streaming source for gold.
+    # insert-only, so gold can keep streaming from silver
     batch_df.sparkSession.sql(f"""
         MERGE INTO {SILVER} AS t
         USING silver_updates AS s

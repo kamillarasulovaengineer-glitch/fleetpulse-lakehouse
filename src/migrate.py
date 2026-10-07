@@ -1,8 +1,4 @@
 # Databricks notebook source
-# Applies versioned DDL from src/migrations to the target schema.
-# Files are named V<version>__<description>.sql and each one runs exactly once, in version order.
-# Applied versions are recorded in _schema_migrations with a checksum, so a file that has already
-# reached an environment can't be edited quietly - the fix is always a new migration.
 
 import hashlib
 import re
@@ -38,8 +34,6 @@ def load_migrations(directory):
 
 
 def split_statements(sql):
-    # Whole-line comments are dropped first. Good enough for DDL as long as no string literal
-    # contains a semicolon.
     body = "\n".join(line for line in sql.splitlines() if not line.lstrip().startswith("--"))
     return [statement.strip() for statement in body.split(";") if statement.strip()]
 

@@ -19,8 +19,6 @@ variables:
 
 targets:
   dev:
-    # Development mode prefixes resource names with the deploying user and pauses schedules,
-    # so several people can deploy dev side by side without stepping on each other.
     mode: development
     default: true
     variables:
@@ -35,8 +33,6 @@ targets:
   prod:
     mode: production
     workspace:
-      # Production mode requires an explicit root path. Prod has a single owner here; with a
-      # service principal this would be its home folder, together with run_as.
       root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
     variables:
       schema: prod

@@ -1,6 +1,4 @@
 # Databricks notebook source
-# Reference data for the demo fleet. The generator is seeded, so every run produces the same
-# 20 trucks, and the write is an upsert, so re-running is a no-op unless a truck actually changes.
 
 import random
 

@@ -1,6 +1,5 @@
 line-length = 120
-target-version = "py310"  # oldest Python on serverless environments
-# Databricks notebooks get these injected at runtime.
+target-version = "py310"
 builtins = ["spark", "dbutils", "display"]
 
 [lint]

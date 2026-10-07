@@ -1,6 +1,4 @@
 # Databricks notebook source
-# Landing files -> bronze_pings via Auto Loader. Append-only and deliberately dumb: values stay
-# the strings we received, plus which file each row came from and when we picked it up.
 
 import os
 
@@ -28,8 +26,7 @@ def has_files(path):
         return False
 
 
-# Auto Loader can't infer a schema from an empty directory. A fresh environment can be scheduled
-# before its first file arrives, and that's not a failure.
+# Auto Loader can't infer a schema from an empty directory
 if not has_files(landing):
     dbutils.notebook.exit(f"nothing to ingest yet in {landing}")
 
@@ -39,8 +36,6 @@ query = (
     spark.readStream.format("cloudFiles")
     .option("cloudFiles.format", "json")
     .option("cloudFiles.schemaLocation", f"{checkpoints}/bronze_schema")
-    # The schema is inferred once and then held. Unexpected fields end up in _rescued_data instead
-    # of widening the table on their own; structural changes go through migrations.
     .option("cloudFiles.schemaEvolutionMode", "rescue")
     .load(landing)
     .select(

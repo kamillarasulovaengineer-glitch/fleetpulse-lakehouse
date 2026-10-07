@@ -1,3 +1,1 @@
-# Migrations are checksummed after they're applied; keep line endings identical no matter
-# which machine (or CI runner) does the deploy.
 * text=auto eol=lf

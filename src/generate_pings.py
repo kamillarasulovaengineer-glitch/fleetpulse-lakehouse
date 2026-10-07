@@ -1,7 +1,4 @@
 # Databricks notebook source
-# Stand-in for the device feed: writes newline-delimited JSON files of GPS pings into the landing volume.
-# Every file deliberately carries one exact duplicate and one ping with a null latitude, so silver
-# has something to de-duplicate and something to quarantine.
 
 import json
 import os

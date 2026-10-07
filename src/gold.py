@@ -1,6 +1,4 @@
 # Databricks notebook source
-# silver_pings (stream) joined with truck_details (static) -> gold_truck_position:
-# the latest known position of every truck, with its vehicle, home depot, region and driver.
 
 from pyspark.sql import Window
 from pyspark.sql import functions as F
@@ -21,14 +19,11 @@ GOLD = f"{catalog}.{schema}.gold_truck_position"
 
 # COMMAND ----------
 
-# Static side of the join. truck_details is a Delta table, so every micro-batch is joined against
-# its latest version: reference-data changes are picked up without restarting the stream.
 truck_details = spark.read.table(TRUCK_DETAILS).drop("updated_at")
 
 positions = (
     spark.readStream.table(SILVER)
     .select("truck_id", "event_ts", "latitude", "longitude")
-    # Left join: a truck we have no details for yet still gets a position.
     .join(F.broadcast(truck_details), "truck_id", "left")
 )
 
@@ -43,7 +38,6 @@ def upsert_batch(batch_df, batch_id):
         .createOrReplaceTempView("gold_updates")
     )
 
-    # Positions only move forward in time: a late ping never overwrites a newer one.
     batch_df.sparkSession.sql(f"""
         MERGE INTO {GOLD} AS t
         USING gold_updates AS s

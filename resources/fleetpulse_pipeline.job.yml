@@ -3,7 +3,6 @@ resources:
     fleetpulse_pipeline:
       name: fleetpulse-pipeline-${bundle.target}
       description: Applies pending schema migrations, then moves pings landing -> bronze -> silver -> gold.
-      # The streams share checkpoints, so two overlapping runs must never happen.
       max_concurrent_runs: 1
       timeout_seconds: 3600
       tags:
