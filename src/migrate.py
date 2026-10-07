@@ -8,6 +8,8 @@ dbutils.widgets.text("catalog", "telematics")
 dbutils.widgets.text("schema", "")
 dbutils.widgets.text("migrations_dir", "")
 
+# COMMAND ----------
+
 catalog = dbutils.widgets.get("catalog")
 schema = dbutils.widgets.get("schema")
 migrations_dir = dbutils.widgets.get("migrations_dir")

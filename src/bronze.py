@@ -9,6 +9,8 @@ dbutils.widgets.text("schema", "")
 dbutils.widgets.text("landing_volume", "landing")
 dbutils.widgets.text("checkpoint_volume", "checkpoints")
 
+# COMMAND ----------
+
 catalog = dbutils.widgets.get("catalog")
 schema = dbutils.widgets.get("schema")
 if not schema:

@@ -5,6 +5,8 @@ import random
 dbutils.widgets.text("catalog", "telematics")
 dbutils.widgets.text("schema", "")
 
+# COMMAND ----------
+
 catalog = dbutils.widgets.get("catalog")
 schema = dbutils.widgets.get("schema")
 if not schema:

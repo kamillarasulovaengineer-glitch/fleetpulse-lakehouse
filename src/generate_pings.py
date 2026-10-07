@@ -12,6 +12,8 @@ dbutils.widgets.text("landing_volume", "landing")
 dbutils.widgets.text("batches", "20")
 dbutils.widgets.text("interval_seconds", "3")
 
+# COMMAND ----------
+
 catalog = dbutils.widgets.get("catalog")
 schema = dbutils.widgets.get("schema")
 landing_volume = dbutils.widgets.get("landing_volume")
