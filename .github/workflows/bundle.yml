@@ -1,8 +1,6 @@
 name: bundle
 
-# Branch -> target: dev -> dev, test -> test, main -> prod.
-# A pull request validates the bundle against the target of the branch it merges into;
-# the merge (a push to that branch) deploys it.
+# dev -> dev, test -> test, main -> prod. A PR lints and validates; the merge deploys and runs.
 on:
   pull_request:
     branches: [dev, test, main]
@@ -16,9 +14,6 @@ permissions:
 env:
   DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
   DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
-  # Free Edition has a daily compute quota, so schedules stay paused unless the
-  # PIPELINE_PAUSE_STATUS repository variable is set to UNPAUSED.
-  BUNDLE_VAR_pipeline_pause_status: ${{ vars.PIPELINE_PAUSE_STATUS || 'PAUSED' }}
 
 jobs:
   validate:
@@ -29,6 +24,8 @@ jobs:
       TARGET: ${{ (github.base_ref == 'main' && 'prod') || (github.base_ref == 'test' && 'test') || 'dev' }}
     steps:
       - uses: actions/checkout@v4
+      - name: Lint
+        run: pipx run ruff==0.16.10 check . && pipx run ruff==0.16.10 format --check .
       - uses: databricks/setup-cli@v1.19.0
       - name: Validate
         run: databricks bundle validate -t "$TARGET"
@@ -42,10 +39,13 @@ jobs:
       cancel-in-progress: false
     env:
       TARGET: ${{ (github.ref_name == 'main' && 'prod') || (github.ref_name == 'test' && 'test') || 'dev' }}
+      PAUSE: ${{ vars.PIPELINE_PAUSE_STATUS }} # per GitHub environment (PAUSED on test/prod: Free Edition quota)
     steps:
       - uses: actions/checkout@v4
       - uses: databricks/setup-cli@v1.19.0
       - name: Validate
         run: databricks bundle validate -t "$TARGET"
       - name: Deploy
-        run: databricks bundle deploy -t "$TARGET"
+        run: databricks bundle deploy -t "$TARGET" ${PAUSE:+--var=pipeline_pause_status=$PAUSE}
+      - name: Run pipeline
+        run: databricks bundle run fleetpulse_pipeline -t "$TARGET" ${PAUSE:+--var=pipeline_pause_status=$PAUSE}
