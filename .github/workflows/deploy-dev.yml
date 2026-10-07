@@ -6,12 +6,17 @@ on:
   pull_request:
   workflow_dispatch:
 
+# PRs from forks get no secrets, so validation only runs for branches in this repo.
+permissions:
+  contents: read
+
 concurrency:
   group: fleetpulse-dev
   cancel-in-progress: false
 
 jobs:
   dev:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     env:
       DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}

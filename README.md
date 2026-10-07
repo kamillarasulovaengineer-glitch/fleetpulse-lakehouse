@@ -9,7 +9,7 @@ truck reference data. Everything (schema, volumes, tables, jobs, dashboard) is d
 The diagram is generated from [docs/architecture.mmd](docs/architecture.mmd) with mermaid-cli
 (`mmdc -i docs/architecture.mmd -o docs/architecture.png -b white -s 2 -w 1400`).
 
-Design notes and trade-offs are in [DESIGN.md](DESIGN.md). Proof that it runs is in [docs/](docs/).
+Design notes and trade-offs are in [DESIGN.md](DESIGN.md). Proof that it runs is in [docs/README.md](docs/README.md).
 
 ## Layout
 
