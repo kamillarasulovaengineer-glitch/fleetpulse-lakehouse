@@ -1,0 +1,32 @@
+%%{init: {"theme": "neutral", "flowchart": {"curve": "basis"}}}%%
+flowchart LR
+    subgraph sim_job["fleetpulse-simulator job"]
+        sim["generate_pings.py"]
+    end
+
+    landing[("landing volume<br/>JSON ping files")]
+
+    subgraph pipeline_job["fleetpulse-pipeline job (availableNow, one checkpoint per stream)"]
+        migrate["migrate.py<br/>applies V*.sql"]
+        seed["seed_truck_details.py"]
+        bronze["bronze_pings<br/>raw strings, append-only"]
+        silver["silver_pings<br/>typed, one row per (truck_id, event_ts)"]
+        quarantine["silver_pings_quarantine<br/>rejects + reason"]
+        trucks[("truck_details<br/>static Delta table")]
+        join(("stream-static<br/>join"))
+        gold["gold_truck_position<br/>latest ping per truck + in_geofence"]
+    end
+
+    dashboard["fleet overview dashboard"]
+
+    sim -->|"NDJSON files"| landing
+    landing -->|"Auto Loader"| bronze
+    bronze -->|"try_cast, validate,<br/>dedup, insert-only MERGE"| silver
+    bronze -->|"invalid rows"| quarantine
+    seed -->|"MERGE"| trucks
+    silver -->|"readStream"| join
+    trucks -->|"broadcast, latest version<br/>each micro-batch"| join
+    join -->|"MERGE on truck_id,<br/>forward in time only"| gold
+    migrate -.->|"DDL, runs first"| bronze
+    gold --> dashboard
+    silver --> dashboard

@@ -4,11 +4,10 @@ GPS pings from a truck fleet, streamed through bronze / silver / gold on Databri
 truck reference data. Everything (schema, volumes, tables, jobs, dashboard) is deployed by one bundle to
 `dev`, `test` and `prod`.
 
-```
-landing volume ──Auto Loader──> bronze_pings ──MERGE──> silver_pings ──stream-static join──> gold_truck_position
-  (JSON files)                  (raw strings)     │                          ▲
-                                                  └──> silver_pings_quarantine   truck_details
-```
+![Data flow](docs/architecture.png)
+
+The diagram is generated from [docs/architecture.mmd](docs/architecture.mmd) with mermaid-cli
+(`mmdc -i docs/architecture.mmd -o docs/architecture.png -b white -s 2 -w 1400`).
 
 Design notes and trade-offs are in [DESIGN.md](DESIGN.md). Proof that it runs is in [docs/](docs/).
 
@@ -29,7 +28,7 @@ src/
   bronze.py  silver.py  gold.py
   dashboards/fleet_overview.lvdash.json
 .github/workflows/deploy-dev.yml   validate on PR, deploy dev on push to main
-docs/                              CLI logs and screenshots from the runs
+docs/                              data-flow diagram, CLI logs and screenshots from the runs
 ```
 
 ## Targets
