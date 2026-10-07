@@ -11,7 +11,7 @@ resources:
 
       schedule:
         quartz_cron_expression: ${var.pipeline_cron}
-        timezone_id: UTC
+        timezone_id: America/New_York
         pause_status: ${var.pipeline_pause_status}
 
       parameters:
