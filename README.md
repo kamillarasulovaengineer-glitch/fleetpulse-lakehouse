@@ -43,7 +43,8 @@ Development mode prefixes names with the deploying user so people don't collide 
 
 ## Prerequisites
 
-- A Databricks workspace (Free Edition is fine; everything runs on serverless).
+- A Databricks workspace (Free Edition is fine). No compute is declared anywhere in the bundle, so
+  every task runs on serverless.
 - Databricks CLI, recent 1.x (developed against v1.19.0).
 - Auth: `databricks configure` with the workspace URL and a personal access token, then
   `databricks current-user me` to check.
