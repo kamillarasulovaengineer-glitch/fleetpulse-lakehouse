@@ -50,11 +50,15 @@ Development mode prefixes names with the deploying user so people don't collide 
 
 ## One-time setup
 
-The catalog is shared by all three targets, so no single target owns it. Create it once:
+The catalog is shared by all three targets, so no single target owns it. Create it once, from the
+SQL editor:
 
+```sql
+CREATE CATALOG IF NOT EXISTS telematics;
 ```
-databricks catalogs create telematics
-```
+
+On Free Edition this has to go through SQL (or Catalog Explorer): the metastore has no storage root,
+so `databricks catalogs create` is rejected, while SQL picks up the account's default storage.
 
 If your workspace doesn't let you create catalogs, use one you can write to and pass
 `--var catalog=<name>` to every `deploy` and `run` below.
