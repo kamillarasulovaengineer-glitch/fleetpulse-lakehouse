@@ -1,0 +1,44 @@
+bundle:
+  name: fleetpulse
+
+include:
+  - resources/*.yml
+
+variables:
+  catalog:
+    description: Catalog shared by all targets. Created once, outside the bundle (see README).
+    default: telematics
+  schema:
+    description: Per-target schema that holds every table, volume and checkpoint.
+  pipeline_cron:
+    description: Quartz cron for the pipeline job.
+    default: "0 0 * * * ?"
+  pipeline_pause_status:
+    description: PAUSED or UNPAUSED.
+    default: PAUSED
+
+targets:
+  dev:
+    # Development mode prefixes resource names with the deploying user and pauses schedules,
+    # so several people can deploy dev side by side without stepping on each other.
+    mode: development
+    default: true
+    variables:
+      schema: dev
+
+  test:
+    variables:
+      schema: test
+      pipeline_cron: "0 0 * * * ?" # hourly
+      pipeline_pause_status: UNPAUSED
+
+  prod:
+    mode: production
+    workspace:
+      # Production mode requires an explicit root path. Prod has a single owner here; with a
+      # service principal this would be its home folder, together with run_as.
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
+    variables:
+      schema: prod
+      pipeline_cron: "0 0/15 * * * ?" # every 15 minutes
+      pipeline_pause_status: UNPAUSED
