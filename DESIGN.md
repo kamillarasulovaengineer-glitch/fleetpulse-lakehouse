@@ -1,10 +1,9 @@
 # Design notes
 
-**Structured Streaming over Lakeflow.** Idempotent writes and versioned table structure are the core
-of the brief, and hand-rolled streams make both explicit: every write is a MERGE or a transactional
-append, every table comes from a numbered migration. Lakeflow is less code and what I'd use with a
-bigger team, but it owns the table lifecycle, so a schema change becomes "edit the definition and let
-it reconcile", often with a full refresh.
+**Structured Streaming over Lakeflow.** Hand-rolled streams keep what the brief cares most about
+explicit: every write is a MERGE or a transactional append, every table comes from a numbered
+migration. Lakeflow is less code, but it owns the table lifecycle, so a schema change becomes "edit
+the definition and reconcile", often with a full refresh.
 
 **Triggers.** `availableNow` everywhere. Serverless has no processing-time triggers, and a scheduled
 run that drains what has landed and stops only costs compute while there is work. Latency is the
@@ -39,7 +38,9 @@ edited quietly. DDL is `IF NOT EXISTS`, an `ADD COLUMN` that already exists coun
 die between the ALTER and the ledger insert), backfills are `WHERE col IS NULL`. Promotion is the
 same commit deployed to dev, test, then prod. Changes stay additive; a rename would be add, backfill,
 switch readers, drop. Rollback is redeploying the previous commit: writers name their MERGE columns,
-so old code keeps working against a newer schema; data goes back with `RESTORE TABLE`. For real,
+so old code keeps working against a newer schema. The schema itself only moves forward (a V003 that
+reverses V002); `RESTORE TABLE` would leave the migration ledger ahead of the table and, on silver,
+break the stream gold reads, so it's for bad data, not for undoing a migration. For real,
 prod would also be enforced: jobs `run_as` a service principal, humans `SELECT` only, deploys from CI
 on a tag behind an approval, OIDC instead of a PAT.
 
