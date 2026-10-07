@@ -40,6 +40,20 @@ def split_statements(sql):
     return [statement.strip() for statement in body.split(";") if statement.strip()]
 
 
+ADD_COLUMN = re.compile(r"ALTER\s+TABLE\s+\S+\s+ADD\s+COLUMNS?\b", re.IGNORECASE)
+
+
+def run_statement(statement):
+    try:
+        spark.sql(statement)
+    except Exception as e:
+        # an earlier run added the column but died before recording the version
+        if ADD_COLUMN.match(statement) and "ALREADY_EXISTS" in str(e):
+            print(f"  column already there, skipping: {statement.splitlines()[0]}")
+            return
+        raise
+
+
 # COMMAND ----------
 
 spark.sql(f"USE CATALOG {catalog}")
@@ -59,6 +73,7 @@ migrations = load_migrations(migrations_dir)
 if not migrations:
     raise RuntimeError(f"no migrations found in {migrations_dir}")
 
+applied_now = []
 for version, name, sql in migrations:
     checksum = hashlib.sha256(sql.encode()).hexdigest()
 
@@ -69,10 +84,13 @@ for version, name, sql in migrations:
 
     print(f"applying V{version}__{name}")
     for statement in split_statements(sql):
-        spark.sql(statement)
+        run_statement(statement)
     spark.sql(
         "INSERT INTO _schema_migrations VALUES (:version, :name, :checksum, current_timestamp())",
         args={"version": version, "name": name, "checksum": checksum},
     )
+    applied_now.append(f"V{version}__{name}")
 
-print(f"{catalog}.{schema} is at V{migrations[-1][0]}")
+dbutils.notebook.exit(
+    f"{catalog}.{schema} at V{migrations[-1][0]}; applied this run: {', '.join(applied_now) or 'nothing'}"
+)
