@@ -1,0 +1,49 @@
+
+>>> SELECT * FROM telematics.dev_kamilla_rasulova_engineer_dev._schema_migrations
+  version | name           | checksum                                 | applied_at              
+  1       | initial_tables | a80274efed5c03bd334f482392effec165c6814a | 2026-10-07 13:13:55 EDT
+  (1 rows)
+
+>>> SELECT 'bronze' AS layer, count(*) AS n FROM telematics.dev_kamilla_rasulova_engineer_dev.bronze_pings UNION ALL SELECT 'silver', count(*) FROM telematics.dev_kamilla_rasulova_engineer_dev.silver_ping
+  layer         | n  
+  landing_files | 20 
+  bronze        | 250
+  silver        | 210
+  quarantine    | 20 
+  gold          | 20 
+  truck_details | 20 
+  (6 rows)
+
+>>> SELECT reason, count(*) AS n FROM telematics.dev_kamilla_rasulova_engineer_dev.silver_pings_quarantine GROUP BY reason
+  reason              | n 
+  missing coordinates | 20
+  (1 rows)
+
+>>> SELECT count(*) AS silver_rows, count(DISTINCT truck_id, event_ts) AS distinct_keys FROM telematics.dev_kamilla_rasulova_engineer_dev.silver_pings
+  silver_rows | distinct_keys
+  210         | 210          
+  (1 rows)
+
+>>> SELECT truck_id, driver, region, home_depot, make, model, event_ts, latitude, longitude FROM telematics.dev_kamilla_rasulova_engineer_dev.gold_truck_position ORDER BY region, truck_id
+  truck_id | driver    | region    | home_depot | make         | model    | event_ts                 | latitude  | longitude 
+  TRK-001  | D. Patel  | Midwest   | Chicago    | Freightliner | Cascadia | 2026-10-07 13:12:40 EDT | 41.977806 | -87.48008 
+  TRK-009  | F. Santos | Midwest   | Chicago    | Peterbilt    | 579      | 2026-10-07 13:12:24 EDT | 42.04525  | -87.513391
+  TRK-010  | I. Novak  | Midwest   | Chicago    | Kenworth     | T680     | 2026-10-07 13:12:40 EDT | 42.013013 | -87.457032
+  TRK-014  | E. Nguyen | Midwest   | Chicago    | Volvo        | VNL      | 2026-10-07 13:12:46 EDT | 41.996476 | -87.552429
+  TRK-002  | I. Novak  | South     | Dallas     | Volvo        | VNL      | 2026-10-07 13:12:46 EDT | 41.962522 | -87.471225
+  TRK-004  | I. Novak  | South     | Dallas     | Freightliner | Cascadia | 2026-10-07 13:12:37 EDT | 41.773992 | -87.658412
+  TRK-005  | D. Patel  | South     | Dallas     | Freightliner | Cascadia | 2026-10-07 13:12:24 EDT | 41.654931 | -87.759263
+  TRK-013  | B. Chen   | South     | Dallas     | Freightliner | Cascadia | 2026-10-07 13:12:34 EDT | 41.900717 | -87.730273
+  TRK-016  | B. Chen   | South     | Dallas     | Kenworth     | T680     | 2026-10-07 13:12:46 EDT | 41.907046 | -87.695909
+  TRK-017  | H. Brooks | South     | Dallas     | Volvo        | VNL      | 2026-10-07 13:12:43 EDT | 41.900147 | -87.603555
+  TRK-019  | F. Santos | South     | Dallas     | Freightliner | Cascadia | 2026-10-07 13:12:37 EDT | 41.920349 | -87.594266
+  TRK-003  | A. Rivera | Southeast | Atlanta    | Freightliner | Cascadia | 2026-10-07 13:12:46 EDT | 41.803976 | -87.718057
+  TRK-011  | I. Novak  | Southeast | Atlanta    | Freightliner | Cascadia | 2026-10-07 13:12:43 EDT | 41.830484 | -87.787283
+  TRK-006  | C. Okafor | West      | Denver     | Peterbilt    | 579      | 2026-10-07 13:12:40 EDT | 41.956994 | -87.550364
+  TRK-007  | C. Okafor | West      | Denver     | Peterbilt    | 579      | 2026-10-07 13:12:40 EDT | 41.820839 | -87.513469
+  TRK-008  | B. Chen   | West      | Denver     | Volvo        | VNL      | 2026-10-07 13:12:43 EDT | 41.853398 | -87.714555
+  TRK-012  | B. Chen   | West      | Denver     | Kenworth     | T680     | 2026-10-07 13:12:46 EDT | 41.879312 | -87.574413
+  TRK-015  | F. Santos | West      | Denver     | Peterbilt    | 579      | 2026-10-07 13:12:46 EDT | 41.720322 | -87.786074
+  TRK-018  | F. Santos | West      | Denver     | Peterbilt    | 579      | 2026-10-07 13:12:31 EDT | 41.786183 | -87.537077
+  TRK-020  | D. Patel  | West      | Denver     | Peterbilt    | 579      | 2026-10-07 13:12:46 EDT | 41.983031 | -87.671931
+  (20 rows)

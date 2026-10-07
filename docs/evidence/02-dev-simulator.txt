@@ -1,0 +1,5 @@
+$ databricks bundle run fleetpulse_simulator -t dev
+Run URL: https://<workspace>/jobs/1104756763977643/runs/921406289610018
+
+2026-10-07 13:11:32 EDT "[dev kamilla_rasulova_engineer] fleetpulse-simulator-dev" RUNNING
+2026-10-07 13:12:55 EDT "[dev kamilla_rasulova_engineer] fleetpulse-simulator-dev" TERMINATED SUCCESS

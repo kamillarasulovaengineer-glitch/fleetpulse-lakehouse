@@ -1,0 +1,44 @@
+# 2026-10-07 14:21:26 EDT  git b91b9b8
+$ databricks bundle validate -t prod --var pipeline_pause_status=PAUSED
+Name: fleetpulse
+Target: prod
+Workspace:
+  User: <user>
+  Path: /Workspace/Users/<user>/.bundle/fleetpulse/prod
+
+Validation OK!
+
+$ databricks bundle deploy -t prod --var pipeline_pause_status=PAUSED
+Uploading bundle files to /Workspace/Users/<user>/.bundle/fleetpulse/prod/files...
+Updated jobs.fleetpulse_pipeline
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 4 unchanged
+
+$ databricks bundle run fleetpulse_simulator -t prod --var pipeline_pause_status=PAUSED
+Run URL: https://<workspace>/jobs/976206675275742/runs/923704094456363
+
+2026-10-07 14:21:38 EDT "fleetpulse-simulator-prod" RUNNING
+2026-10-07 14:23:02 EDT "fleetpulse-simulator-prod" TERMINATED SUCCESS
+
+$ databricks bundle run fleetpulse_pipeline -t prod --var pipeline_pause_status=PAUSED
+Run URL: https://<workspace>/jobs/755004309447683/runs/437916987534452
+
+2026-10-07 14:23:05 EDT "fleetpulse-pipeline-prod" RUNNING
+2026-10-07 14:24:50 EDT "fleetpulse-pipeline-prod" TERMINATED SUCCESS
+Output:
+=======
+Task migrate:
+telematics.prod at V2; applied this run: V2__gold_truck_position_add_in_geofence
+=======
+Task seed_truck_details:
+
+=======
+Task bronze:
+
+=======
+Task silver:
+
+=======
+Task gold:
+
+

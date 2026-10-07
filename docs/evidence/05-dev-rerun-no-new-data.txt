@@ -1,0 +1,27 @@
+$ databricks bundle deploy -t dev
+Uploading bundle files to /Workspace/Users/<user>/.bundle/fleetpulse/dev/files...
+Files: 11 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 5 unchanged
+
+$ databricks bundle run fleetpulse_pipeline -t dev   # no new files: nothing should change
+Run URL: https://<workspace>/jobs/197224751308888/runs/370054861319998
+2026-10-07 13:17:57 EDT "[dev kamilla_rasulova_engineer] fleetpulse-pipeline-dev" RUNNING
+2026-10-07 13:29:35 EDT "[dev kamilla_rasulova_engineer] fleetpulse-pipeline-dev" TERMINATED SUCCESS
+
+>>> SELECT (SELECT count(*) FROM telematics.dev_kamilla_rasulova_engineer_dev.bronze_pings) bronze, (SELECT count(*) FROM telematics.dev_kamilla_rasulova_engineer_dev.silver_pings) silver, (SELECT count(*
+  bronze | silver | quarantine | gold
+  250    | 210    | 20         | 20  
+  (1 rows)
+
+[exited with code 0]
+
+>>> SELECT (SELECT count(*) FROM telematics.dev_kamilla_rasulova_engineer_dev.bronze_pings) bronze, (SELECT count(*) FROM telematics.dev_kamilla_rasulova_engineer_dev.silver_pings) silver, (SELECT count(D
+  bronze | silver | silver_keys | quarantine | gold
+  250    | 210    | 210         | 20         | 20  
+  (1 rows)
+
+>>> SELECT version, operation, operationParameters.mode, operationMetrics.numOutputRows FROM (DESCRIBE HISTORY telematics.dev_kamilla_rasulova_engineer_dev.silver_pings) ORDER BY version
+  version | operation    | mode | numOutputRows
+  0       | CREATE TABLE | None | None         
+  1       | MERGE        | None | 210          
+  (2 rows)

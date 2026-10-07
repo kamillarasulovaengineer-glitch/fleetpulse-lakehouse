@@ -1,0 +1,7 @@
+# 2026-10-07 14:29:11 EDT  git 5136ec0
+$ databricks bundle deploy -t prod --var pipeline_pause_status=PAUSED
+Uploading bundle files to /Workspace/Users/<user>/.bundle/fleetpulse/prod/files...
+Created dashboards.fleet_overview
+Updated jobs.fleetpulse_pipeline
+Files: 6 uploaded, 0 deleted
+Resources: 1 created, 1 changed, 0 deleted, 4 unchanged

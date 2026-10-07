@@ -1,0 +1,48 @@
+# 2026-10-07 13:35:13 EDT  git 06574a5
+$ databricks bundle validate -t prod
+Name: fleetpulse
+Target: prod
+Workspace:
+  User: <user>
+  Path: /Workspace/Users/<user>/.bundle/fleetpulse/prod
+
+Validation OK!
+
+$ databricks bundle deploy -t prod
+Uploading bundle files to /Workspace/Users/<user>/.bundle/fleetpulse/prod/files...
+Created schemas.fleetpulse
+Created volumes.checkpoints
+Created volumes.landing
+Created jobs.fleetpulse_simulator
+Created jobs.fleetpulse_pipeline
+Files: 17 uploaded, 0 deleted
+Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
+
+$ databricks bundle run fleetpulse_simulator -t prod
+Run URL: https://<workspace>/jobs/976206675275742/runs/533674225895330
+
+2026-10-07 13:35:24 EDT "fleetpulse-simulator-prod" RUNNING
+2026-10-07 13:38:02 EDT "fleetpulse-simulator-prod" TERMINATED SUCCESS
+
+$ databricks bundle run fleetpulse_pipeline -t prod
+Run URL: https://<workspace>/jobs/755004309447683/runs/613921191132353
+
+2026-10-07 13:38:05 EDT "fleetpulse-pipeline-prod" RUNNING
+2026-10-07 13:55:08 EDT "fleetpulse-pipeline-prod" TERMINATED SUCCESS
+Output:
+=======
+Task migrate:
+telematics.prod at V1; applied this run: V1__initial_tables
+=======
+Task seed_truck_details:
+
+=======
+Task bronze:
+
+=======
+Task silver:
+
+=======
+Task gold:
+
+

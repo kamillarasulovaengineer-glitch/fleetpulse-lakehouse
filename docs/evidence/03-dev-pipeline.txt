@@ -1,0 +1,21 @@
+$ databricks bundle run fleetpulse_pipeline -t dev
+Run URL: https://<workspace>/jobs/197224751308888/runs/1068460668388530
+
+2026-10-07 13:13:03 EDT "[dev kamilla_rasulova_engineer] fleetpulse-pipeline-dev" RUNNING
+2026-10-07 13:15:51 EDT "[dev kamilla_rasulova_engineer] fleetpulse-pipeline-dev" TERMINATED SUCCESS
+Output:
+=======
+Task migrate:
+
+=======
+Task seed_truck_details:
+
+=======
+Task bronze:
+
+=======
+Task silver:
+
+=======
+Task gold:
+
