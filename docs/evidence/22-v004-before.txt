@@ -1,0 +1,15 @@
+# 2026-10-07 18:31:38 EDT  BEFORE V004 (in_geofence column comment) in every environment
+
+>>> SELECT table_schema, column_name, comment FROM telematics.information_schema.columns WHERE table_name = 'gold_truck_position' AND column_name = 'in_geofence' ORDER BY table_schema
+  table_schema                      | column_name | comment                                            
+  dev_<user>_dev                    | in_geofence | Latest ping is inside the downtown Chicago geofence
+  prod                              | in_geofence | Latest ping is inside the downtown Chicago geofence
+  test                              | in_geofence | Latest ping is inside the downtown Chicago geofence
+  (3 rows)
+
+>>> SELECT 'dev' AS env, max(version) AS schema_version FROM telematics.dev_<user>_dev._schema_migrations UNION ALL SELECT 'test', max(version) FROM telematics.test._schema_migrations UNION ALL SELECT 'prod', max(version) FROM telematics.prod._schema_migrations
+  env  | schema_version
+  dev  | 3             
+  test | 3             
+  prod | 3             
+  (3 rows)

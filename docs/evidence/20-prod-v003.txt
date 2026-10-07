@@ -1,0 +1,31 @@
+# 2026-10-07 18:07:56 EDT  prod, git 2121258 (V003 deployed)
+$ databricks bundle run fleetpulse_pipeline -t prod
+Run URL: https://<workspace>/jobs/755004309447683/runs/276424154229293
+2026-10-07 18:07:58 EDT "fleetpulse-pipeline-prod" RUNNING
+2026-10-07 18:10:58 EDT "fleetpulse-pipeline-prod" TERMINATED SUCCESS
+telematics.prod at V3; applied this run: V3__gold_region_pings
+
+
+>>> SELECT version, name, applied_at FROM telematics.prod._schema_migrations ORDER BY version
+  version | name                                | applied_at              
+  1       | initial_tables                      | 2026-10-07 13:53:10 EDT 
+  2       | gold_truck_position_add_in_geofence | 2026-10-07 14:23:25 EDT 
+  3       | gold_region_pings                   | 2026-10-07 18:08:51 EDT 
+  (3 rows)
+
+>>> SELECT window_minutes, count(*) AS windows_x_regions, sum(pings) AS pings_in_gold, (SELECT count(*) FROM telematics.prod.silver_pings) AS rows_in_silver FROM telematics.prod.gold_region_pings GROUP BY …
+  window_minutes | windows_x_regions | pings_in_gold | rows_in_silver
+  5              | 8                 | 407           | 407           
+  (1 rows)
+
+>>> SELECT window_minutes, window_start, window_end, region, pings, trucks FROM telematics.prod.gold_region_pings ORDER BY window_start DESC, region LIMIT 8
+  window_minutes | window_start             | window_end               | region    | pings | trucks
+  5              | 2026-10-07 14:20:00 EDT  | 2026-10-07 14:25:00 EDT  | Midwest   | 40    | 4     
+  5              | 2026-10-07 14:20:00 EDT  | 2026-10-07 14:25:00 EDT  | South     | 61    | 7     
+  5              | 2026-10-07 14:20:00 EDT  | 2026-10-07 14:25:00 EDT  | Southeast | 18    | 2     
+  5              | 2026-10-07 14:20:00 EDT  | 2026-10-07 14:25:00 EDT  | West      | 68    | 7     
+  5              | 2026-10-07 13:35:00 EDT  | 2026-10-07 13:40:00 EDT  | Midwest   | 45    | 4     
+  5              | 2026-10-07 13:35:00 EDT  | 2026-10-07 13:40:00 EDT  | South     | 72    | 7     
+  5              | 2026-10-07 13:35:00 EDT  | 2026-10-07 13:40:00 EDT  | Southeast | 24    | 2     
+  5              | 2026-10-07 13:35:00 EDT  | 2026-10-07 13:40:00 EDT  | West      | 79    | 7     
+  (8 rows)

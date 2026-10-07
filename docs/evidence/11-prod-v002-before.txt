@@ -2,7 +2,7 @@
 
 >>> SELECT version, name, applied_at FROM telematics.prod._schema_migrations ORDER BY version
   version | name           | applied_at              
-  1       | initial_tables | 2026-10-07 13:53:10 EDT
+  1       | initial_tables | 2026-10-07 13:53:10 EDT 
   (1 rows)
 
 >>> SELECT column_name, data_type FROM telematics.information_schema.columns WHERE table_schema = 'prod' AND table_name = 'gold_truck_position' ORDER BY ordinal_position

@@ -3,8 +3,8 @@ migrate task output: telematics.prod at V2; applied this run: V2__gold_truck_pos
 
 >>> SELECT version, name, applied_at FROM telematics.prod._schema_migrations ORDER BY version
   version | name                                | applied_at              
-  1       | initial_tables                      | 2026-10-07 13:53:10 EDT
-  2       | gold_truck_position_add_in_geofence | 2026-10-07 14:23:25 EDT
+  1       | initial_tables                      | 2026-10-07 13:53:10 EDT 
+  2       | gold_truck_position_add_in_geofence | 2026-10-07 14:23:25 EDT 
   (2 rows)
 
 >>> SELECT column_name, data_type FROM telematics.information_schema.columns WHERE table_schema = 'prod' AND table_name = 'gold_truck_position' ORDER BY ordinal_position
@@ -23,23 +23,23 @@ migrate task output: telematics.prod at V2; applied this run: V2__gold_truck_pos
   in_geofence  | BOOLEAN  
   (12 rows)
 
->>> SELECT version, timestamp, userName, operation, job.jobId AS job_id, job.runId AS task_run_id FROM (DESCRIBE HISTORY telematics.prod.gold_truck_position) ORDER BY version
-  version | timestamp                | userName                            | operation    | job_id          | task_run_id      
-  0       | 2026-10-07 13:53:09 EDT | <user> | CREATE TABLE | 755004309447683 | 610253851283582 
-  1       | 2026-10-07 13:54:54 EDT | <user> | MERGE        | 755004309447683 | 1093238211297538
-  2       | 2026-10-07 14:23:20 EDT | <user> | ADD COLUMNS  | 755004309447683 | 193751013370953 
-  3       | 2026-10-07 14:23:25 EDT | <user> | UPDATE       | 755004309447683 | 193751013370953 
-  4       | 2026-10-07 14:24:37 EDT | <user> | MERGE        | 755004309447683 | 628999981289306 
+>>> SELECT version, timestamp, userName, operation, job.jobId AS job_id, job.runId AS job_run_id FROM (DESCRIBE HISTORY telematics.prod.gold_truck_position) ORDER BY version
+  version | timestamp                | userName                            | operation    | job_id          | job_run_id      
+  0       | 2026-10-07 13:53:09 EDT  | <user>                              | CREATE TABLE | 755004309447683 | 610253851283582 
+  1       | 2026-10-07 13:54:54 EDT  | <user>                              | MERGE        | 755004309447683 | 1093238211297538
+  2       | 2026-10-07 14:23:20 EDT  | <user>                              | ADD COLUMNS  | 755004309447683 | 193751013370953 
+  3       | 2026-10-07 14:23:25 EDT  | <user>                              | UPDATE       | 755004309447683 | 193751013370953 
+  4       | 2026-10-07 14:24:37 EDT  | <user>                              | MERGE        | 755004309447683 | 628999981289306 
   (5 rows)
 
 >>> SELECT truck_id, driver, region, home_depot, in_geofence, event_ts FROM telematics.prod.gold_truck_position ORDER BY in_geofence DESC, truck_id LIMIT 8
   truck_id | driver    | region    | home_depot | in_geofence | event_ts                
-  TRK-010  | I. Novak  | Midwest   | Chicago    | true        | 2026-10-07 14:22:53 EDT
-  TRK-011  | I. Novak  | Southeast | Atlanta    | true        | 2026-10-07 14:22:46 EDT
-  TRK-012  | B. Chen   | West      | Denver     | true        | 2026-10-07 14:22:49 EDT
-  TRK-015  | F. Santos | West      | Denver     | true        | 2026-10-07 14:22:53 EDT
-  TRK-001  | D. Patel  | Midwest   | Chicago    | false       | 2026-10-07 14:22:53 EDT
-  TRK-002  | I. Novak  | South     | Dallas     | false       | 2026-10-07 14:22:27 EDT
-  TRK-003  | A. Rivera | Southeast | Atlanta    | false       | 2026-10-07 14:22:49 EDT
-  TRK-004  | I. Novak  | South     | Dallas     | false       | 2026-10-07 14:22:46 EDT
+  TRK-010  | I. Novak  | Midwest   | Chicago    | true        | 2026-10-07 14:22:53 EDT 
+  TRK-011  | I. Novak  | Southeast | Atlanta    | true        | 2026-10-07 14:22:46 EDT 
+  TRK-012  | B. Chen   | West      | Denver     | true        | 2026-10-07 14:22:49 EDT 
+  TRK-015  | F. Santos | West      | Denver     | true        | 2026-10-07 14:22:53 EDT 
+  TRK-001  | D. Patel  | Midwest   | Chicago    | false       | 2026-10-07 14:22:53 EDT 
+  TRK-002  | I. Novak  | South     | Dallas     | false       | 2026-10-07 14:22:27 EDT 
+  TRK-003  | A. Rivera | Southeast | Atlanta    | false       | 2026-10-07 14:22:49 EDT 
+  TRK-004  | I. Novak  | South     | Dallas     | false       | 2026-10-07 14:22:46 EDT 
   (8 rows)

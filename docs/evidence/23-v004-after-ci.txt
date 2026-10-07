@@ -1,0 +1,36 @@
+# 2026-10-07 18:43:43 EDT  AFTER V004, promoted by CI only (no CLI deploy or run by hand)
+# commit acdee0e: push to dev -> CI run 37696824378 (deploy + run dev); PR #3 dev -> test -> CI run 37697249870 (deploy + run test); PR #4 test -> main -> CI run 37697692460 (deploy + run prod)
+
+>>> SELECT table_schema, column_name, comment FROM telematics.information_schema.columns WHERE table_name = 'gold_truck_position' AND column_name = 'in_geofence' ORDER BY table_schema
+  table_schema                      | column_name | comment                                                              
+  dev_<user>_dev                    | in_geofence | Latest ping is inside the box set by the geofence_box bundle variable
+  prod                              | in_geofence | Latest ping is inside the box set by the geofence_box bundle variable
+  test                              | in_geofence | Latest ping is inside the box set by the geofence_box bundle variable
+  (3 rows)
+
+>>> SELECT 'dev' AS env, max(version) AS schema_version FROM telematics.dev_<user>_dev._schema_migrations UNION ALL SELECT 'test', max(version) FROM telematics.test._schema_migrations UNION ALL SELECT 'prod', max(version) FROM telematics.prod._schema_migrations
+  env  | schema_version
+  dev  | 4             
+  test | 4             
+  prod | 4             
+  (3 rows)
+
+>>> SELECT version, name, applied_at FROM telematics.prod._schema_migrations ORDER BY version
+  version | name                                | applied_at              
+  1       | initial_tables                      | 2026-10-07 13:53:10 EDT 
+  2       | gold_truck_position_add_in_geofence | 2026-10-07 14:23:25 EDT 
+  3       | gold_region_pings                   | 2026-10-07 18:08:51 EDT 
+  4       | gold_in_geofence_comment            | 2026-10-07 18:41:13 EDT 
+  (4 rows)
+
+>>> SELECT version, timestamp, operation, job.jobId AS job_id, job.runId AS task_run_id FROM (DESCRIBE HISTORY telematics.prod.gold_truck_position) WHERE operation IN ('CHANGE COLUMN', 'ADD COLUMNS', 'UPDATE', 'SET TBLPROPERTIES') ORDER BY version
+  version | timestamp                | operation     | job_id          | task_run_id    
+  2       | 2026-10-07 14:23:20 EDT  | ADD COLUMNS   | 755004309447683 | 193751013370953
+  3       | 2026-10-07 14:23:25 EDT  | UPDATE        | 755004309447683 | 193751013370953
+  5       | 2026-10-07 18:41:13 EDT  | CHANGE COLUMN | 755004309447683 | 726666073167626
+  (3 rows)
+
+>>> SELECT window_minutes, sum(pings) AS pings_in_gold, (SELECT count(*) FROM telematics.prod.silver_pings) AS rows_in_silver FROM telematics.prod.gold_region_pings GROUP BY window_minutes
+  window_minutes | pings_in_gold | rows_in_silver
+  5              | 407           | 407           
+  (1 rows)

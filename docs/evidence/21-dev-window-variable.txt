@@ -1,0 +1,31 @@
+# 2026-10-07 18:12:48 EDT  dev, git 2121258: change the window size by variable only
+$ databricks bundle deploy -t dev --var region_window_minutes=10
+Uploading bundle files to /Workspace/Users/<user>/.bundle/fleetpulse/dev/files...
+Updated jobs.fleetpulse_pipeline
+Files: 53 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 5 unchanged
+
+$ databricks bundle run fleetpulse_pipeline -t dev --var region_window_minutes=10
+2026-10-07 18:13:01 EDT "[dev <user>] fleetpulse-pipeline-dev" RUNNING
+2026-10-07 18:24:19 EDT "[dev <user>] fleetpulse-pipeline-dev" TERMINATED SUCCESS
+
+
+>>> SELECT window_minutes, count(*) AS windows_x_regions, sum(pings) AS pings_in_gold, (SELECT count(*) FROM telematics.dev_<user>_dev.silver_pings) AS rows_in_silver FROM telematics.dev_<user>_dev.gold_region_pings GROUP BY window_minutes ORDER BY window_minutes
+  window_minutes | windows_x_regions | pings_in_gold | rows_in_silver
+  5              | 20                | 698           | 698           
+  10             | 16                | 698           | 698           
+  (2 rows)
+
+>>> SELECT window_minutes, window_start, window_end, region, pings FROM telematics.dev_<user>_dev.gold_region_pings WHERE window_minutes = 10 ORDER BY window_start DESC, region LIMIT 4
+  window_minutes | window_start             | window_end               | region    | pings
+  10             | 2026-10-07 17:20:00 EDT  | 2026-10-07 17:30:00 EDT  | Midwest   | 48   
+  10             | 2026-10-07 17:20:00 EDT  | 2026-10-07 17:30:00 EDT  | South     | 58   
+  10             | 2026-10-07 17:20:00 EDT  | 2026-10-07 17:30:00 EDT  | Southeast | 21   
+  10             | 2026-10-07 17:20:00 EDT  | 2026-10-07 17:30:00 EDT  | West      | 77   
+  (4 rows)
+
+$ databricks bundle deploy -t dev   # back to the default (5)
+Uploading bundle files to /Workspace/Users/<user>/.bundle/fleetpulse/dev/files...
+Updated jobs.fleetpulse_pipeline
+Files: 10 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 5 unchanged
