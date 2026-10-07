@@ -110,6 +110,8 @@ unqualified table names and the bundle points them at the target's catalog and s
 (`dataset_catalog` / `dataset_schema`); the SQL warehouse is looked up by name. Times are shown in
 US Eastern.
 
+![Fleet overview dashboard in prod](docs/screenshots/09-prod-dashboard.png)
+
 ## Changing a table
 
 Tables are never created or altered by hand, in any environment.
